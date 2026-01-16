@@ -3,7 +3,7 @@
  * Education Hub - Helper Functions
  */
 
-require_once 'database.php';
+require_once __DIR__ . '/database.php';
 
 // Check if user is logged in
 function isLoggedIn() {
@@ -31,6 +31,17 @@ function isStudent() {
     return hasRole('student');
 }
 
+// Get base URL for redirects
+function getBasePath() {
+    $scriptPath = $_SERVER['PHP_SELF'];
+    if (strpos($scriptPath, '/admin/') !== false || 
+        strpos($scriptPath, '/auth/') !== false ||
+        strpos($scriptPath, '/includes/') !== false) {
+        return '../';
+    }
+    return '';
+}
+
 // Redirect function
 function redirect($url) {
     header("Location: $url");
@@ -40,7 +51,8 @@ function redirect($url) {
 // Protect route - redirect to login if not authenticated
 function requireLogin() {
     if (!isLoggedIn()) {
-        redirect('login.php');
+        $basePath = getBasePath();
+        redirect($basePath . 'auth/login.php');
     }
 }
 
@@ -48,7 +60,8 @@ function requireLogin() {
 function requireAdmin() {
     requireLogin();
     if (!isAdmin()) {
-        redirect('dashboard.php?error=unauthorized');
+        $basePath = getBasePath();
+        redirect($basePath . 'dashboard.php?error=unauthorized');
     }
 }
 
@@ -56,7 +69,8 @@ function requireAdmin() {
 function requireTeacher() {
     requireLogin();
     if (!isTeacher() && !isAdmin()) {
-        redirect('dashboard.php?error=unauthorized');
+        $basePath = getBasePath();
+        redirect($basePath . 'dashboard.php?error=unauthorized');
     }
 }
 

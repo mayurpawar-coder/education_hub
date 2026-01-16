@@ -88,7 +88,7 @@ $notes = $conn->query($sql);
                             <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 16px;">
                                 <?= htmlspecialchars(substr($note['content'], 0, 100)) ?>...
                             </p>
-                            <a href="download_note.php?id=<?= $note['id'] ?>" class="btn btn-sm btn-primary">📥 Download</a>
+                            <a href="download_notes.php?id=<?= $note['id'] ?>" class="btn btn-sm btn-primary">📥 Download</a>
                         </div>
                         <?php endwhile; ?>
                     <?php else: ?>
