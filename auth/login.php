@@ -97,12 +97,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p>Don't have an account? <a href="register.php">Sign up</a></p>
             </div>
             
-            <div class="demo-credentials">
+            <!-- <div class="demo-credentials">
                 <p><strong>Demo Credentials:</strong></p>
                 <p>Student: raj@test.com / password123</p>
                 <p>Teacher: teacher@test.com / password123</p>
                 <p>Admin: admin@educationhub.com / password123</p>
-            </div>
+            </div> -->
         </div>
     </div>
 </body>
