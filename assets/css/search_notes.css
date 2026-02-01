@@ -1,0 +1,336 @@
+/* Search Notes Page - Modern Styles */
+
+.notes-hero {
+    text-align: center;
+    padding: 40px 24px;
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, rgba(0, 153, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+}
+
+.notes-hero h1 {
+    font-size: 32px;
+    margin-bottom: 8px;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.notes-hero p {
+    color: var(--text-muted);
+    font-size: 16px;
+}
+
+/* Year Tabs */
+.year-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.year-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.year-tab:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.year-tab.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.year-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.year-badge.fy {
+    background: #10b981;
+    color: white;
+}
+
+.year-badge.sy {
+    background: #f59e0b;
+    color: white;
+}
+
+.year-badge.ty {
+    background: #ef4444;
+    color: white;
+}
+
+.year-tab.active .year-badge {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Semester Tabs */
+.semester-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    padding: 8px;
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+}
+
+.semester-tab {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.semester-tab:hover {
+    background: var(--surface-light);
+    color: var(--text);
+}
+
+.semester-tab.active {
+    background: var(--primary);
+    color: white;
+}
+
+/* Modern Search Bar */
+.modern-search {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 16px;
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+}
+
+.search-input-wrapper {
+    flex: 1;
+    min-width: 250px;
+    position: relative;
+}
+
+.search-input-wrapper .search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+}
+
+.modern-search .search-input {
+    width: 100%;
+    padding: 14px 14px 14px 48px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--background);
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.modern-search .search-input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(0, 153, 255, 0.1);
+}
+
+.modern-select {
+    padding: 14px 20px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--background);
+    font-size: 14px;
+    min-width: 200px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.modern-select:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.btn-search {
+    padding: 14px 28px;
+    font-weight: 600;
+}
+
+/* Modern Note Cards */
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.modern-card {
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-primary);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.modern-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.modern-card:hover::before {
+    opacity: 1;
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.subject-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.semester-badge {
+    padding: 4px 12px;
+    background: var(--surface-light);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.note-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.note-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.note-content {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.btn-download:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 153, 255, 0.3);
+}
+
+/* Empty State */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 40px;
+    background: var(--surface);
+    border-radius: 20px;
+    border: 2px dashed var(--border);
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+}
+
+.empty-state h3 {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.empty-state p {
+    color: var(--text-muted);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .year-tabs {
+        overflow-x: auto;
+        padding-bottom: 8px;
+        flex-wrap: nowrap;
+    }
+    
+    .year-tab {
+        white-space: nowrap;
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+    
+    .modern-search {
+        flex-direction: column;
+    }
+    
+    .search-input-wrapper {
+        width: 100%;
+        min-width: unset;
+    }
+    
+    .modern-select {
+        width: 100%;
+        min-width: unset;
+    }
+    
+    .btn-search {
+        width: 100%;
+    }
+}

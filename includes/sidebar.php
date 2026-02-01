@@ -1,6 +1,7 @@
 <?php
 /**
  * Education Hub - Sidebar Component
+ * Clean version without Live Quiz
  */
 
 $currentPage = basename($_SERVER['PHP_SELF']);

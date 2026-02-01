@@ -484,8 +484,7 @@ table {
     border-collapse: collapse;
 }
 
-th,
-td {
+th, td {
     padding: 16px;
     text-align: left;
     border-bottom: 1px solid var(--border);
@@ -713,37 +712,36 @@ tr:hover {
         transform: translateX(-100%);
         z-index: 1000;
     }
-
+    
     .sidebar.open {
         transform: translateX(0);
     }
-
+    
     .main-content {
         margin-left: 0;
     }
-
+    
     .header {
         flex-direction: column;
         gap: 16px;
         align-items: flex-start;
     }
-
+    
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-
+    
     .admin-stats {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
 @media (max-width: 480px) {
-
     .stats-grid,
     .admin-stats {
         grid-template-columns: 1fr;
     }
-
+    
     .auth-card {
         padding: 24px;
     }

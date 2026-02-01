@@ -1,48 +1,60 @@
 <?php
 /**
- * Education Hub - Manage Users (Admin Only)
+ * Education Hub - Manage Subjects (Admin Only)
  */
 
 require_once '../config/functions.php';
 requireAdmin();
 
-$pageTitle = 'Manage Users';
+$pageTitle = 'Manage Subjects';
 $success = '';
 $error = '';
 
-// Handle user deletion
+// Handle subject deletion
 if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     $deleteId = (int)$_GET['delete'];
-    if ($deleteId !== $_SESSION['user_id']) {
-        $conn->query("DELETE FROM users WHERE id = $deleteId");
-        $success = 'User deleted successfully';
-    } else {
-        $error = 'Cannot delete your own account';
-    }
+    $conn->query("DELETE FROM subjects WHERE id = $deleteId");
+    $success = 'Subject deleted successfully';
 }
 
-// Handle role change
-if (isset($_POST['change_role'])) {
-    $userId = (int)$_POST['user_id'];
-    $newRole = sanitize($_POST['new_role']);
+// Handle add subject
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = sanitize($_POST['name'] ?? '');
+    $description = sanitize($_POST['description'] ?? '');
+    $color = sanitize($_POST['color'] ?? '#0099ff');
+    $year = sanitize($_POST['year'] ?? 'FY');
+    $semester = (int)($_POST['semester'] ?? 1);
+    $createdBy = $_SESSION['user_id'];
     
-    if (in_array($newRole, ['student', 'teacher', 'admin'])) {
-        $stmt = $conn->prepare("UPDATE users SET role = ? WHERE id = ?");
-        $stmt->bind_param("si", $newRole, $userId);
-        $stmt->execute();
-        $success = 'User role updated successfully';
+    if (empty($name)) {
+        $error = 'Subject name is required';
+    } else {
+        $stmt = $conn->prepare("INSERT INTO subjects (name, description, color, year, semester, created_by) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssii", $name, $description, $color, $year, $semester, $createdBy);
+        
+        if ($stmt->execute()) {
+            $success = 'Subject added successfully';
+        } else {
+            $error = 'Failed to add subject';
+        }
     }
 }
 
-// Get all users
-$users = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
+// Get all subjects with stats
+$subjects = $conn->query("
+    SELECT s.*, 
+           (SELECT COUNT(*) FROM notes WHERE subject_id = s.id) as notes_count,
+           (SELECT COUNT(*) FROM questions WHERE subject_id = s.id) as questions_count
+    FROM subjects s 
+    ORDER BY s.year, s.semester, s.name
+");
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Users - Education Hub</title>
+    <title>Manage Subjects - Education Hub</title>
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
@@ -61,51 +73,88 @@ $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
                     <?= showAlert($success, 'success') ?>
                 <?php endif; ?>
                 
+                <!-- Add Subject Form -->
+                <div class="card" style="margin-bottom: 32px;">
+                    <h3 style="margin-bottom: 24px;">Add New Subject</h3>
+                    
+                    <form method="POST">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 20px; align-items: end;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="name">Subject Name *</label>
+                                <input type="text" id="name" name="name" placeholder="e.g., Biology" required>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="description">Description</label>
+                                <input type="text" id="description" name="description" placeholder="Brief description">
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="year">Year</label>
+                                <select id="year" name="year">
+                                    <option value="FY">First Year (FY)</option>
+                                    <option value="SY">Second Year (SY)</option>
+                                    <option value="TY">Third Year (TY)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="semester">Semester</label>
+                                <select id="semester" name="semester">
+                                    <option value="1">Sem 1</option>
+                                    <option value="2">Sem 2</option>
+                                    <option value="3">Sem 3</option>
+                                    <option value="4">Sem 4</option>
+                                    <option value="5">Sem 5</option>
+                                    <option value="6">Sem 6</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="color">Color</label>
+                                <input type="color" id="color" name="color" value="#0099ff" style="height: 42px; width: 60px;">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">➕ Add Subject</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Subjects List -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">All Users (<?= $users->num_rows ?>)</h3>
+                        <h3 class="card-title">All Subjects (<?= $subjects->num_rows ?>)</h3>
                     </div>
                     
                     <div class="table-container">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Joined</th>
+                                    <th>Subject</th>
+                                    <th>Year</th>
+                                    <th>Semester</th>
+                                    <th>Notes</th>
+                                    <th>Questions</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php while ($user = $users->fetch_assoc()): ?>
+                                <?php while ($subject = $subjects->fetch_assoc()): ?>
                                 <tr>
-                                    <td><?= $user['id'] ?></td>
-                                    <td><?= htmlspecialchars($user['name']) ?></td>
-                                    <td><?= htmlspecialchars($user['email']) ?></td>
                                     <td>
-                                        <form method="POST" style="display: inline;">
-                                            <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
-                                            <select name="new_role" onchange="this.form.submit()" 
-                                                    style="padding: 4px 8px; border-radius: 4px; background: var(--surface-light); color: var(--text); border: 1px solid var(--border);"
-                                                    <?= $user['id'] === $_SESSION['user_id'] ? 'disabled' : '' ?>>
-                                                <option value="student" <?= $user['role'] === 'student' ? 'selected' : '' ?>>Student</option>
-                                                <option value="teacher" <?= $user['role'] === 'teacher' ? 'selected' : '' ?>>Teacher</option>
-                                                <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>Admin</option>
-                                            </select>
-                                            <input type="hidden" name="change_role" value="1">
-                                        </form>
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <div style="width: 12px; height: 12px; border-radius: 50%; background: <?= $subject['color'] ?>;"></div>
+                                            <strong><?= htmlspecialchars($subject['name']) ?></strong>
+                                        </div>
                                     </td>
-                                    <td><?= formatDate($user['created_at']) ?></td>
+                                    <td><?= $subject['year'] ?></td>
+                                    <td>Sem <?= $subject['semester'] ?></td>
+                                    <td><?= $subject['notes_count'] ?></td>
+                                    <td><?= $subject['questions_count'] ?></td>
                                     <td>
-                                        <?php if ($user['id'] !== $_SESSION['user_id']): ?>
-                                        <a href="?delete=<?= $user['id'] ?>" 
-                                           onclick="return confirm('Are you sure you want to delete this user?')"
+                                        <a href="?delete=<?= $subject['id'] ?>" 
+                                           onclick="return confirm('Delete this subject? All related notes and questions will also be deleted!')"
                                            class="btn btn-sm btn-danger">Delete</a>
-                                        <?php else: ?>
-                                        <span style="color: var(--text-muted);">Current User</span>
-                                        <?php endif; ?>
                                     </td>
                                 </tr>
                                 <?php endwhile; ?>
