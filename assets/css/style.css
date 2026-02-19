@@ -1,24 +1,136 @@
-/* Education Hub - Main Stylesheet */
-/* For XAMPP - HTML/CSS/JS Implementation */
+/**
+ * ============================================================
+ * Education Hub - Main Stylesheet (style.css)
+ * ============================================================
+ * 
+ * FILE NAVIGATION:
+ *   This CSS file is loaded by EVERY page in the project:
+ *   - auth/login.php → loads this for auth-page, auth-card styles
+ *   - auth/register.php → loads this for auth-page, form-group styles
+ *   - dashboard.php → loads this for layout, sidebar, stat-card styles
+ *   - admin/dashboard.php → loads this via ../assets/css/style.css
+ *   - admin/users.php → loads this for table, card styles
+ *   - admin/subjects.php → loads this for form-group, table styles
+ *   - search_notes.php → loads this + search_notes.css
+ *   - quiz.php → loads this + quiz.css
+ *   - performance.php → loads this for stats-grid, table styles
+ *   - teacher_performance.php → loads this for stats-grid, table styles
+ *   - upload_notes.php → loads this + upload_notes.css
+ *   - manage_questions.php → loads this for card, form-group, table styles
+ *   - my_uploads.php → loads this for card, table styles
+ *   - download_notes.php → no UI (file download handler)
+ * 
+ * ARCHITECTURE:
+ *   1. CSS Variables (Design Tokens) — all colors, gradients, shadows
+ *   2. Reset & Base — box-sizing, body defaults, scrollbar
+ *   3. Auth Pages — login/register centered card layout
+ *   4. Buttons — primary, secondary, success, danger variants
+ *   5. Layout — sidebar + main content flex structure
+ *   6. Cards & Stats — dashboard stat cards, subject cards
+ *   7. Tables — admin user/subject management tables
+ *   8. Alerts — success/error/warning feedback banners
+ *   9. Responsive — mobile sidebar toggle, grid adjustments
+ * 
+ * DESIGN PHILOSOPHY:
+ *   Royal Blue + Sky Blue combination chosen for:
+ *   - Trust & professionalism (blue is #1 corporate color)
+ *   - Academic credibility (university-grade feel)
+ *   - High contrast readability (dark text on light surfaces)
+ *   - Consistent visual hierarchy throughout the app
+ * 
+ * SIDEBAR SCROLL FIX:
+ *   The sidebar uses overflow-y: auto on .sidebar-nav so that
+ *   admin users with many links can scroll to see Logout button.
+ *   This is a critical accessibility requirement.
+ * ============================================================
+ */
 
+
+/* ===========================================================
+   1. CSS VARIABLES (Design Tokens)
+   ===========================================================
+   All colors defined as CSS custom properties for easy theming.
+   Changing a variable here updates the entire app instantly.
+   
+   COLOR PALETTE: Royal Blue + Sky Blue
+   - Primary: Deep royal blue (#1a56db) for CTAs and key elements
+   - Primary-hover: Darker shade for interactive states
+   - Sky: Light sky blue (#38bdf8) for highlights and accents
+   - Surface: Pure white (#ffffff) for cards and content areas
+   - Background: Soft blue-tinted gray (#f0f5ff) for page bg
+   =========================================================== */
 :root {
-    --primary: #0099ff;
-    --primary-dark: #0077cc;
-    --secondary: #7c3aed;
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --background: #0f1419;
-    --surface: #1a1f2e;
-    --surface-light: #252b3b;
-    --text: #ffffff;
-    --text-muted: #9ca3af;
-    --border: #374151;
-    --gradient-primary: linear-gradient(135deg, #0099ff, #7c3aed);
-    --gradient-success: linear-gradient(135deg, #10b981, #0099ff);
-    --gradient-warning: linear-gradient(135deg, #f59e0b, #ef4444);
+    /* --- Primary Brand Colors (Royal Blue family) --- */
+    --primary: #1a56db;           /* Deep royal blue — main brand, CTAs */
+    --primary-dark: #1e40af;      /* Darker blue — hover/active states */
+    --primary-light: #dbeafe;     /* Very light blue — tinted backgrounds */
+    --primary-lighter: #eff6ff;   /* Nearly white blue — subtle tints */
+
+    /* --- Sky Blue Accent (complementary) --- */
+    --sky: #38bdf8;               /* Bright sky blue — accent highlights */
+    --sky-light: #e0f2fe;         /* Light sky — badge backgrounds */
+    --sky-dark: #0284c7;          /* Deep sky — text on light bg */
+
+    /* --- Secondary (Indigo for variety) --- */
+    --secondary: #4f46e5;         /* Indigo — secondary actions */
+    --secondary-light: #e0e7ff;   /* Light indigo — subtle accents */
+
+    /* --- Semantic Colors (feedback) --- */
+    --success: #059669;           /* Emerald — correct, success */
+    --success-light: #d1fae5;     /* Light green — success backgrounds */
+    --warning: #d97706;           /* Amber — warnings, average status */
+    --warning-light: #fef3c7;     /* Light amber — warning backgrounds */
+    --danger: #dc2626;            /* Red — errors, delete, wrong answers */
+    --danger-light: #fee2e2;      /* Light red — error backgrounds */
+
+    /* --- Surface & Background --- */
+    --background: #f0f5ff;        /* Page background — soft blue-tinted */
+    --surface: #ffffff;           /* Cards, panels — pure white */
+    --surface-light: #f1f5f9;     /* Inputs, hover bg — light gray */
+    --surface-border: #e2e8f0;    /* Card borders — subtle gray */
+
+    /* --- Text Colors (high contrast for readability) --- */
+    --text: #1e293b;              /* Primary text — dark slate */
+    --text-muted: #64748b;        /* Descriptions — medium gray */
+    --text-light: #94a3b8;        /* Timestamps, labels — light gray */
+
+    /* --- Borders & Focus --- */
+    --border: #e2e8f0;            /* Default border color */
+    --border-focus: #1a56db;      /* Focus ring — matches primary */
+
+    /* --- Gradients --- */
+    --gradient-primary: linear-gradient(135deg, #1a56db 0%, #38bdf8 100%);
+    --gradient-sidebar: linear-gradient(180deg, #0f2557 0%, #1a365d 100%);
+    --gradient-success: linear-gradient(135deg, #059669 0%, #38bdf8 100%);
+    --gradient-warning: linear-gradient(135deg, #d97706 0%, #dc2626 100%);
+    --gradient-hero: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 50%, #e0e7ff 100%);
+
+    /* --- Shadows (professional depth) --- */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.06), 0 4px 10px rgba(0, 0, 0, 0.04);
+    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.08);
+    --shadow-primary: 0 4px 14px rgba(26, 86, 219, 0.3);
+    --shadow-sky: 0 4px 14px rgba(56, 189, 248, 0.25);
+
+    /* --- Border Radius (consistent rounding) --- */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+
+    /* --- Transitions --- */
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+
+/* ===========================================================
+   2. RESET & BASE STYLES
+   ===========================================================
+   Universal box-sizing: padding included in width calculations.
+   Body: sets default font, background, text color, line height.
+   =========================================================== */
 * {
     margin: 0;
     padding: 0;
@@ -26,41 +138,71 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
     background: var(--background);
     color: var(--text);
     line-height: 1.6;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* ==================== AUTH PAGES ==================== */
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* --- Custom Scrollbar (webkit browsers) --- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface-light); }
+::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; opacity: 0.5; }
+::-webkit-scrollbar-thumb:hover { opacity: 0.8; }
+
+
+/* ===========================================================
+   3. AUTH PAGES (Login & Register)
+   ===========================================================
+   OPENED FROM: auth/login.php, auth/register.php
+   NAVIGATES TO: dashboard.php (on success), register.php (signup link)
+   
+   Layout: Full-screen centered card using flexbox.
+   Background: Soft blue gradient for visual interest.
+   Card: White with rounded corners, soft shadow, border.
+   =========================================================== */
+
+/* Full-viewport centered wrapper */
 .auth-page {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 50%, #0f1419 100%);
-}
-
-.auth-container {
-    width: 100%;
-    max-width: 420px;
+    /* Gradient: royal blue light → sky blue light → indigo light */
+    background: var(--gradient-hero);
     padding: 20px;
 }
 
+/* Constrains form width for readability */
+.auth-container {
+    width: 100%;
+    max-width: 440px;
+}
+
+/* White card: elevated, rounded, bordered */
 .auth-card {
     background: var(--surface);
-    border-radius: 16px;
+    border-radius: var(--radius-xl);
     padding: 40px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-xl);
     border: 1px solid var(--border);
 }
 
+/* Logo + title section at card top */
 .auth-header {
     text-align: center;
     margin-bottom: 32px;
 }
 
+/* Logo: emoji icon + app name side by side */
 .logo {
     display: flex;
     align-items: center;
@@ -69,12 +211,12 @@ body {
     margin-bottom: 8px;
 }
 
-.logo-icon {
-    font-size: 32px;
-}
+.logo-icon { font-size: 36px; }
 
+/* App title: gradient text (royal → sky blue) */
 .logo h1 {
-    font-size: 24px;
+    font-size: 26px;
+    font-weight: 800;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -83,229 +225,286 @@ body {
 
 .auth-header p {
     color: var(--text-muted);
+    font-size: 15px;
+    margin-top: 4px;
 }
 
+/* Form: vertical stack with consistent spacing */
 .auth-form {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
+/* Each label + input pair */
 .form-group {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
+/* Labels: small, semibold */
 .form-group label {
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--text);
 }
 
+/* Inputs: rounded, bordered, light bg */
 .form-group input,
 .form-group select,
 .form-group textarea {
     padding: 12px 16px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
     background: var(--surface-light);
     color: var(--text);
     font-size: 14px;
-    transition: border-color 0.3s, box-shadow 0.3s;
+    font-family: inherit;
+    transition: var(--transition);
 }
 
+/* Focus: blue border + glow ring */
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(0, 153, 255, 0.2);
+    box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.12);
+    background: var(--surface);
 }
 
-.form-group input::placeholder {
-    color: var(--text-muted);
-}
+.form-group input::placeholder { color: var(--text-light); }
 
+/* "Already have an account?" footer */
 .auth-footer {
     text-align: center;
     margin-top: 24px;
     color: var(--text-muted);
+    font-size: 14px;
 }
+.auth-footer a { color: var(--primary); font-weight: 600; }
+.auth-footer a:hover { text-decoration: underline; }
 
-.auth-footer a {
-    color: var(--primary);
-    text-decoration: none;
-    font-weight: 500;
-}
 
-.auth-footer a:hover {
-    text-decoration: underline;
-}
-
-.demo-credentials {
-    margin-top: 24px;
-    padding: 16px;
-    background: var(--surface-light);
-    border-radius: 8px;
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.demo-credentials p {
-    margin-bottom: 4px;
-}
-
-/* ==================== BUTTONS ==================== */
+/* ===========================================================
+   4. BUTTONS
+   ===========================================================
+   USED IN: Every page — forms, CTAs, quick actions, tables
+   
+   Variants:
+   - btn-primary: gradient fill (royal → sky), white text
+   - btn-secondary: outlined, light bg, blue border on hover
+   - btn-success: solid green, white text
+   - btn-danger: solid red, white text (delete actions)
+   
+   Effects: hover lifts button up 2px with shadow
+   =========================================================== */
 .btn {
     padding: 12px 24px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-size: 14px;
     font-weight: 600;
+    font-family: inherit;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     text-decoration: none;
+    line-height: 1.4;
 }
 
+/* Primary: gradient blue, white text, shadow on hover */
 .btn-primary {
     background: var(--gradient-primary);
     color: white;
 }
-
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0, 153, 255, 0.3);
+    box-shadow: var(--shadow-primary);
 }
 
+/* Secondary: outlined, border highlights on hover */
 .btn-secondary {
-    background: var(--surface-light);
-    color: var(--text);
-    border: 1px solid var(--border);
-}
-
-.btn-secondary:hover {
     background: var(--surface);
+    color: var(--text);
+    border: 2px solid var(--border);
+}
+.btn-secondary:hover {
     border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-lighter);
 }
 
+/* Success: solid emerald green */
 .btn-success {
     background: var(--success);
     color: white;
 }
+.btn-success:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
 
+/* Danger: solid red for destructive actions */
 .btn-danger {
     background: var(--danger);
     color: white;
 }
-
-.btn-block {
-    width: 100%;
+.btn-danger:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
 }
 
-.btn-sm {
-    padding: 8px 16px;
-    font-size: 12px;
-}
+/* Full-width (auth forms) */
+.btn-block { width: 100%; }
 
-/* ==================== LAYOUT ==================== */
+/* Small variant (table actions) */
+.btn-sm { padding: 8px 16px; font-size: 12px; }
+
+
+/* ===========================================================
+   5. LAYOUT — Sidebar + Main Content
+   ===========================================================
+   FILE FLOW:
+   - includes/sidebar.php → renders <aside class="sidebar">
+   - includes/header.php → renders <header class="header">
+   - Each page wraps content in <div class="layout">
+   
+   SIDEBAR: Fixed left (260px), dark navy gradient.
+   MAIN: Fills remaining space, offset by sidebar width.
+   
+   CRITICAL: .sidebar-nav has overflow-y: auto so admin
+   users with many nav links can scroll to see Logout.
+   =========================================================== */
+
+/* Top-level flex wrapper */
 .layout {
     display: flex;
     min-height: 100vh;
 }
 
-/* Sidebar */
+/* Fixed left sidebar — dark navy gradient bg */
 .sidebar {
     width: 260px;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    padding: 24px;
+    background: var(--gradient-sidebar);
+    padding: 24px 16px;
     display: flex;
     flex-direction: column;
     position: fixed;
     height: 100vh;
     left: 0;
     top: 0;
+    z-index: 100;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* Logo area at top of sidebar */
 .sidebar-logo {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 24px;
+    padding: 0 8px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
+
+.sidebar-logo .logo-icon { font-size: 28px; }
 
 .sidebar-logo h2 {
     font-size: 18px;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+    color: #ffffff;
 }
 
+/* Navigation links container — SCROLLABLE */
 .sidebar-nav {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    overflow-y: auto;    /* SCROLL FIX: enables vertical scroll */
+    padding-right: 4px;
+    margin-right: -4px;
 }
 
+/* Thin custom scrollbar for sidebar */
+.sidebar-nav::-webkit-scrollbar { width: 3px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }
+
+/* Individual nav link: icon + label */
 .nav-link {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
-    border-radius: 8px;
-    color: var(--text-muted);
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    color: rgba(255, 255, 255, 0.55);
     text-decoration: none;
-    transition: all 0.3s ease;
+    transition: var(--transition);
+    font-size: 14px;
+    font-weight: 500;
 }
 
+/* Hover: lighten background */
 .nav-link:hover {
-    background: var(--surface-light);
-    color: var(--text);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    padding-left: 18px;
 }
 
+/* Active: royal blue fill */
 .nav-link.active {
-    background: var(--gradient-primary);
-    color: white;
+    background: var(--primary);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(26, 86, 219, 0.3);
 }
 
+/* Nav icon sizing */
 .nav-link .icon {
-    font-size: 20px;
+    font-size: 18px;
+    min-width: 24px;
+    text-align: center;
 }
 
+/* Logout footer — always visible at bottom */
 .sidebar-footer {
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;  /* Never squish — always accessible */
 }
 
-/* Main Content */
+/* Main content area — pushed right by sidebar width */
 .main-content {
     flex: 1;
     margin-left: 260px;
-    padding: 24px;
+    padding: 28px 32px;
+    min-height: 100vh;
 }
 
+/* Page header bar: title left, user info right */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 32px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--border);
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border);
 }
 
 .header h1 {
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
+    color: var(--text);
 }
 
+/* Right side: user avatar + name */
 .header-right {
     display: flex;
     align-items: center;
@@ -318,6 +517,7 @@ body {
     gap: 12px;
 }
 
+/* Circular avatar with gradient */
 .user-avatar {
     width: 40px;
     height: 40px;
@@ -326,36 +526,40 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
-}
-
-.user-details {
-    text-align: right;
-}
-
-.user-name {
-    font-weight: 600;
+    font-weight: 700;
+    color: white;
     font-size: 14px;
+    box-shadow: var(--shadow-primary);
 }
 
-.user-role {
-    font-size: 12px;
-    color: var(--text-muted);
-    text-transform: capitalize;
-}
+.user-details { text-align: right; }
+.user-name { font-weight: 600; font-size: 14px; color: var(--text); }
+.user-role { font-size: 12px; color: var(--text-muted); text-transform: capitalize; }
 
-/* ==================== CARDS ==================== */
+
+/* ===========================================================
+   6. CARDS & STAT CARDS
+   ===========================================================
+   USED IN: dashboard.php (stats), admin/dashboard.php (admin stats),
+            performance.php (quiz history), teacher_performance.php,
+            manage_questions.php (question form), my_uploads.php
+   
+   .stat-card: white card with colored top stripe (4px gradient).
+   .subject-card: course card in dashboard subjects grid.
+   =========================================================== */
+
+/* Generic card container */
 .card {
     background: var(--surface);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     padding: 24px;
     border: 1px solid var(--border);
-    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
 }
 
 .card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-md);
 }
 
 .card-header {
@@ -368,77 +572,82 @@ body {
 .card-title {
     font-size: 18px;
     font-weight: 600;
+    color: var(--text);
 }
 
-/* Stats Cards */
+/* Stats grid: auto-fills columns based on viewport */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 24px;
+    gap: 20px;
     margin-bottom: 32px;
 }
 
+/* Individual stat card with top gradient stripe */
 .stat-card {
     background: var(--surface);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     padding: 24px;
     border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
     position: relative;
     overflow: hidden;
+    transition: var(--transition);
 }
 
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Top stripe: default is royal→sky blue gradient */
 .stat-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 0; left: 0; right: 0;
     height: 4px;
     background: var(--gradient-primary);
 }
 
-.stat-card.success::before {
-    background: var(--gradient-success);
-}
+/* Variant stripes for different types */
+.stat-card.success::before { background: var(--gradient-success); }
+.stat-card.warning::before { background: var(--warning); }
 
-.stat-card.warning::before {
-    background: var(--gradient-warning);
-}
-
-.stat-icon {
-    font-size: 24px;
-    margin-bottom: 12px;
-}
+.stat-icon { font-size: 28px; margin-bottom: 12px; }
 
 .stat-value {
     font-size: 32px;
-    font-weight: 700;
+    font-weight: 800;
+    color: var(--text);
     margin-bottom: 4px;
 }
 
 .stat-label {
     color: var(--text-muted);
     font-size: 14px;
+    font-weight: 500;
 }
 
-/* Subject Cards */
+/* Subject cards grid (dashboard.php) */
 .subjects-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
+    gap: 20px;
 }
 
+/* Subject card: clickable with hover border */
 .subject-card {
     background: var(--surface);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     padding: 24px;
     border: 1px solid var(--border);
-    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
 }
-
 .subject-card:hover {
     transform: translateY(-4px);
     border-color: var(--primary);
+    box-shadow: var(--shadow-md);
 }
 
 .subject-header {
@@ -448,35 +657,37 @@ body {
     margin-bottom: 16px;
 }
 
+/* Icon box inside subject card */
 .subject-icon {
     width: 48px;
     height: 48px;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 24px;
+    background: var(--primary-light);
 }
 
-.subject-name {
-    font-size: 18px;
-    font-weight: 600;
-}
+.subject-name { font-size: 17px; font-weight: 600; color: var(--text); }
+.subject-desc { color: var(--text-muted); font-size: 14px; margin-bottom: 16px; }
+.subject-actions { display: flex; gap: 12px; }
 
-.subject-desc {
-    color: var(--text-muted);
-    font-size: 14px;
-    margin-bottom: 16px;
-}
 
-.subject-actions {
-    display: flex;
-    gap: 12px;
-}
+/* ===========================================================
+   7. TABLES
+   ===========================================================
+   USED IN: admin/users.php, admin/subjects.php,
+            admin/dashboard.php, performance.php,
+            teacher_performance.php, manage_questions.php,
+            my_uploads.php
+   
+   Clean horizontal lines, hover row highlight, scrollable.
+   =========================================================== */
 
-/* ==================== TABLES ==================== */
 .table-container {
     overflow-x: auto;
+    border-radius: var(--radius-sm);
 }
 
 table {
@@ -485,7 +696,7 @@ table {
 }
 
 th, td {
-    padding: 16px;
+    padding: 14px 16px;
     text-align: left;
     border-bottom: 1px solid var(--border);
 }
@@ -496,44 +707,41 @@ th {
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    background: var(--primary-lighter);
+}
+
+td {
+    font-size: 14px;
+    color: var(--text);
 }
 
 tr:hover {
-    background: var(--surface-light);
+    background: var(--primary-lighter);
 }
 
-/* ==================== QUIZ ==================== */
-.quiz-container {
-    max-width: 800px;
-    margin: 0 auto;
-}
+
+/* ===========================================================
+   8. QUIZ (basic — detailed styles in quiz.css)
+   ===========================================================
+   USED IN: quiz.php (State 1, 2, 3)
+   DETAILED CSS: assets/css/quiz.css
+   =========================================================== */
+
+.quiz-container { max-width: 800px; margin: 0 auto; }
 
 .question-card {
     background: var(--surface);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     padding: 32px;
     margin-bottom: 24px;
     border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
 }
 
-.question-number {
-    color: var(--primary);
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 16px;
-}
+.question-number { color: var(--primary); font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+.question-text { font-size: 20px; font-weight: 600; margin-bottom: 24px; color: var(--text); }
 
-.question-text {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 24px;
-}
-
-.options-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
+.options-list { display: flex; flex-direction: column; gap: 12px; }
 
 .option {
     display: flex;
@@ -541,61 +749,37 @@ tr:hover {
     gap: 12px;
     padding: 16px;
     background: var(--surface-light);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     border: 2px solid transparent;
-    transition: all 0.3s ease;
+    transition: var(--transition);
 }
+.option:hover { border-color: var(--primary); }
+.option.selected { border-color: var(--primary); background: var(--primary-light); }
+.option.correct { border-color: var(--success); background: var(--success-light); }
+.option.wrong { border-color: var(--danger); background: var(--danger-light); }
+.option input[type="radio"] { accent-color: var(--primary); }
 
-.option:hover {
-    border-color: var(--primary);
-}
-
-.option.selected {
-    border-color: var(--primary);
-    background: rgba(0, 153, 255, 0.1);
-}
-
-.option.correct {
-    border-color: var(--success);
-    background: rgba(16, 185, 129, 0.1);
-}
-
-.option.wrong {
-    border-color: var(--danger);
-    background: rgba(239, 68, 68, 0.1);
-}
-
-.option input[type="radio"] {
-    accent-color: var(--primary);
-}
-
-/* Quiz Results */
-.result-card {
-    text-align: center;
-    padding: 48px;
-}
-
+/* Quiz result */
+.result-card { text-align: center; padding: 48px; }
 .result-score {
-    font-size: 64px;
-    font-weight: 700;
+    font-size: 64px; font-weight: 800;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 16px;
 }
+.result-message { font-size: 24px; margin-bottom: 8px; color: var(--text); }
+.result-details { color: var(--text-muted); margin-bottom: 32px; }
 
-.result-message {
-    font-size: 24px;
-    margin-bottom: 8px;
-}
 
-.result-details {
-    color: var(--text-muted);
-    margin-bottom: 32px;
-}
+/* ===========================================================
+   9. SEARCH & FILTERS (basic — detailed in search_notes.css)
+   ===========================================================
+   USED IN: search_notes.php
+   DETAILED CSS: assets/css/search_notes.css
+   =========================================================== */
 
-/* ==================== SEARCH & FILTERS ==================== */
 .search-bar {
     display: flex;
     gap: 16px;
@@ -607,63 +791,63 @@ tr:hover {
     flex: 1;
     min-width: 250px;
     padding: 12px 16px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--surface-light);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
     color: var(--text);
     font-size: 14px;
+    font-family: inherit;
+    transition: var(--transition);
 }
-
 .search-input:focus {
     outline: none;
     border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
 }
 
 .filter-select {
     padding: 12px 16px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--surface-light);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
     color: var(--text);
     font-size: 14px;
+    font-family: inherit;
     min-width: 150px;
 }
 
-/* Notes Grid */
+/* Notes grid (used in search_notes.php) */
 .notes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
+    gap: 20px;
 }
 
 .note-card {
     background: var(--surface);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     padding: 24px;
     border: 1px solid var(--border);
-    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
 }
-
 .note-card:hover {
     border-color: var(--primary);
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
 }
 
-.note-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
+.note-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+.note-meta { display: flex; gap: 16px; color: var(--text-muted); font-size: 12px; margin-bottom: 16px; }
 
-.note-meta {
-    display: flex;
-    gap: 16px;
-    color: var(--text-muted);
-    font-size: 12px;
-    margin-bottom: 16px;
-}
 
-/* ==================== ADMIN ==================== */
+/* ===========================================================
+   10. ADMIN SECTIONS
+   ===========================================================
+   USED IN: admin/dashboard.php (platform stats row)
+   4-column grid for admin overview stat cards
+   =========================================================== */
+
 .admin-header {
     display: flex;
     justify-content: space-between;
@@ -674,75 +858,73 @@ tr:hover {
 .admin-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
+    gap: 20px;
     margin-bottom: 32px;
 }
 
-/* ==================== ALERTS ==================== */
+
+/* ===========================================================
+   11. ALERTS (Feedback Banners)
+   ===========================================================
+   GENERATED BY: config/functions.php → showAlert() function
+   USED IN: Every form page after POST submission
+   
+   Colors: green=success, red=error, amber=warning
+   =========================================================== */
+
 .alert {
     padding: 12px 20px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     margin-bottom: 20px;
     display: flex;
     align-items: center;
     gap: 12px;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .alert-success {
-    background: rgba(16, 185, 129, 0.2);
+    background: var(--success-light);
     border: 1px solid var(--success);
     color: var(--success);
 }
 
 .alert-error {
-    background: rgba(239, 68, 68, 0.2);
+    background: var(--danger-light);
     border: 1px solid var(--danger);
     color: var(--danger);
 }
 
 .alert-warning {
-    background: rgba(245, 158, 11, 0.2);
+    background: var(--warning-light);
     border: 1px solid var(--warning);
     color: var(--warning);
 }
 
-/* ==================== RESPONSIVE ==================== */
+
+/* ===========================================================
+   12. RESPONSIVE DESIGN
+   ===========================================================
+   768px: Sidebar hides off-screen (toggle with JS .open class)
+          Main content fills full width
+   480px: Stats grids collapse to single column
+   =========================================================== */
+
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);
         z-index: 1000;
+        transition: transform 0.3s ease;
     }
-    
-    .sidebar.open {
-        transform: translateX(0);
-    }
-    
-    .main-content {
-        margin-left: 0;
-    }
-    
-    .header {
-        flex-direction: column;
-        gap: 16px;
-        align-items: flex-start;
-    }
-    
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .admin-stats {
-        grid-template-columns: repeat(2, 1fr);
-    }
+    .sidebar.open { transform: translateX(0); }
+
+    .main-content { margin-left: 0; padding: 20px 16px; }
+    .header { flex-direction: column; gap: 16px; align-items: flex-start; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .admin-stats { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 480px) {
-    .stats-grid,
-    .admin-stats {
-        grid-template-columns: 1fr;
-    }
-    
-    .auth-card {
-        padding: 24px;
-    }
+    .stats-grid, .admin-stats { grid-template-columns: 1fr; }
+    .auth-card { padding: 24px; }
 }

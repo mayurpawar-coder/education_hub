@@ -1,27 +1,66 @@
-/* Upload Notes Page - Modern Styles */
+/**
+ * ============================================================
+ * Education Hub - Upload Notes Stylesheet (upload_notes.css)
+ * ============================================================
+ * 
+ * FILE NAVIGATION:
+ *   LOADED BY: upload_notes.php (via <link rel="stylesheet">)
+ *   DEPENDS ON: style.css (CSS variables, btn classes, form-group)
+ *
+ * BACKEND FLOW (upload_notes.php):
+ *   1. requireTeacher() — only teachers/admins can access
+ *   2. GET request: shows form with subject dropdown, file upload area
+ *   3. POST request:
+ *      a. Validates title and subject_id
+ *      b. Handles file upload: move_uploaded_file() to uploads/notes/
+ *      c. INSERT INTO notes (title, content, file_path, subject_id, uploaded_by)
+ *   4. JavaScript handles:
+ *      - Year button toggle (FY/SY/TY) → updates semester buttons
+ *      - Semester button toggle → filters subject dropdown
+ *      - Drag & drop file upload with visual feedback
+ *
+ * NAVIGATES TO:
+ *   ← dashboard.php (sidebar link)
+ *   ← manage_questions.php (sidebar link)
+ *   → my_uploads.php (to see uploaded notes)
+ *
+ * DATABASE TABLES:
+ *   - subjects (id, name, year, semester) — for dropdown population
+ *   - notes (id, title, content, file_path, subject_id, uploaded_by)
+ *
+ * COLOR SCHEME: Royal Blue + Sky Blue (inherits from style.css)
+ * ============================================================
+ */
 
+
+/* ===========================================================
+   HERO SECTION — Page title with success-tinted gradient
+   Green-to-blue gradient suggests "upload/contribute" action
+   =========================================================== */
 .upload-hero {
     text-align: center;
-    padding: 40px 24px;
+    padding: 36px 24px;
     margin-bottom: 24px;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(0, 153, 255, 0.1) 100%);
-    border-radius: 20px;
+    background: linear-gradient(135deg, var(--sky-light) 0%, var(--primary-light) 100%);
+    border-radius: var(--radius-xl);
     border: 1px solid var(--border);
 }
 
 .upload-hero h1 {
-    font-size: 32px;
-    margin-bottom: 8px;
-    background: linear-gradient(135deg, #10b981 0%, #0099ff 100%);
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
-.upload-hero p {
-    color: var(--text-muted);
-    font-size: 16px;
-}
+.upload-hero p { color: var(--text-muted); font-size: 15px; }
 
+
+/* ===========================================================
+   UPLOAD FORM CONTAINER — Centered, max-width limited
+   =========================================================== */
 .upload-container {
     max-width: 700px;
     margin: 0 auto;
@@ -29,11 +68,13 @@
 
 .upload-form {
     background: var(--surface);
-    border-radius: 20px;
+    border-radius: var(--radius-xl);
     padding: 32px;
     border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
 }
 
+/* 2-column grid for year/semester selectors side by side */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -41,27 +82,31 @@
     margin-bottom: 24px;
 }
 
-.form-group.full-width {
-    grid-column: 1 / -1;
-}
+/* Full-width items span both columns */
+.form-group.full-width { grid-column: 1 / -1; }
 
+/* Labels in upload form */
 .form-group label {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
     font-size: 14px;
+    color: var(--text);
 }
 
+/* Inputs in upload form */
 .form-group input,
 .form-group select,
 .form-group textarea {
     width: 100%;
-    padding: 14px 16px;
+    padding: 12px 16px;
     border: 2px solid var(--border);
-    border-radius: 12px;
-    background: var(--background);
+    border-radius: var(--radius-md);
+    background: var(--surface-light);
+    color: var(--text);
     font-size: 15px;
-    transition: all 0.3s;
+    font-family: inherit;
+    transition: var(--transition);
 }
 
 .form-group input:focus,
@@ -69,10 +114,15 @@
 .form-group textarea:focus {
     border-color: var(--primary);
     outline: none;
-    box-shadow: 0 0 0 4px rgba(0, 153, 255, 0.1);
+    box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
 }
 
-/* Year Selector */
+
+/* ===========================================================
+   YEAR / SEMESTER SELECTORS — Toggle button groups
+   JavaScript toggles .active class on click.
+   Clicking a year button updates semester options.
+   =========================================================== */
 .year-selector,
 .semester-selector {
     display: flex;
@@ -82,82 +132,74 @@
 .year-btn,
 .sem-btn {
     flex: 1;
-    padding: 14px 16px;
+    padding: 12px 16px;
     border: 2px solid var(--border);
-    border-radius: 10px;
-    background: var(--background);
+    border-radius: var(--radius-sm);
+    background: var(--surface-light);
+    color: var(--text);
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: var(--transition);
+    font-size: 14px;
+    font-family: inherit;
 }
 
-.year-btn:hover,
-.sem-btn:hover {
-    border-color: var(--primary);
-}
+.year-btn:hover, .sem-btn:hover { border-color: var(--primary); }
 
-.year-btn.active,
-.sem-btn.active {
+/* Active state: filled royal blue */
+.year-btn.active, .sem-btn.active {
     background: var(--primary);
     border-color: var(--primary);
     color: white;
+    box-shadow: var(--shadow-primary);
 }
 
-/* File Upload Area */
+
+/* ===========================================================
+   FILE UPLOAD AREA — Drag-and-drop zone
+   Dashed border, click to browse, drag to upload
+   JavaScript handles dragover/dragleave/drop events
+   =========================================================== */
 .file-upload-area {
     border: 2px dashed var(--border);
-    border-radius: 16px;
-    padding: 40px;
+    border-radius: var(--radius-lg);
+    padding: 36px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s;
-    background: var(--background);
+    transition: var(--transition);
+    background: var(--surface-light);
 }
 
+/* Hover/drag-over: blue border + light bg */
 .file-upload-area:hover,
 .file-upload-area.dragover {
     border-color: var(--primary);
-    background: rgba(0, 153, 255, 0.05);
+    background: var(--primary-light);
 }
 
-.upload-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-}
+.upload-icon { font-size: 44px; margin-bottom: 14px; }
+.file-upload-area p { font-size: 15px; margin-bottom: 6px; color: var(--text); }
+.browse-link { color: var(--primary); font-weight: 600; text-decoration: underline; }
+.file-types { font-size: 13px; color: var(--text-muted); }
 
-.file-upload-area p {
-    font-size: 16px;
-    margin-bottom: 8px;
-}
-
-.browse-link {
-    color: var(--primary);
-    font-weight: 600;
-    text-decoration: underline;
-}
-
-.file-types {
-    font-size: 13px;
-    color: var(--text-muted);
-}
-
+/* Selected file feedback (shown by JS after file selection) */
 .selected-file {
     display: none;
-    margin-top: 16px;
-    padding: 12px 16px;
-    background: rgba(16, 185, 129, 0.1);
-    border-radius: 8px;
-    color: #10b981;
-    font-weight: 500;
+    margin-top: 14px; padding: 10px 14px;
+    background: var(--sky-light); border-radius: var(--radius-sm);
+    color: var(--sky-dark); font-weight: 500; font-size: 14px;
 }
 
-/* Upload Button */
+
+/* ===========================================================
+   UPLOAD BUTTON — Full-width gradient CTA
+   =========================================================== */
 .btn-upload {
     width: 100%;
-    padding: 18px;
-    font-size: 18px;
+    padding: 16px;
+    font-size: 17px;
     font-weight: 700;
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -166,20 +208,15 @@
 
 .btn-upload:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(0, 153, 255, 0.3);
+    box-shadow: var(--shadow-primary);
 }
 
-/* Responsive */
+
+/* ===========================================================
+   RESPONSIVE — Single column form on mobile
+   =========================================================== */
 @media (max-width: 600px) {
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .upload-form {
-        padding: 20px;
-    }
-    
-    .file-upload-area {
-        padding: 24px;
-    }
+    .form-grid { grid-template-columns: 1fr; }
+    .upload-form { padding: 20px; }
+    .file-upload-area { padding: 24px; }
 }

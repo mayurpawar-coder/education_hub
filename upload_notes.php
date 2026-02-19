@@ -1,6 +1,34 @@
 <?php
 /**
- * Education Hub - Upload Notes (Teachers Only)
+ * ============================================================
+ * Education Hub - Upload Notes (upload_notes.php)
+ * ============================================================
+ * 
+ * PURPOSE:
+ *   Teachers upload PDF study notes for students.
+ *   Includes Year/Semester/Subject selection and file upload.
+ * 
+ * ACCESS: Teachers and Admins only (requireTeacher)
+ * 
+ * HOW IT WORKS:
+ *   1. Gets all subjects from database for dropdown
+ *   2. On form POST:
+ *      a. Validates title and subject are filled
+ *      b. If file uploaded: moves to uploads/notes/ directory
+ *      c. INSERTs new record into notes table
+ *      d. Shows success/error message
+ *   3. JavaScript handles:
+ *      - Year/Semester button toggles
+ *      - Dynamic subject dropdown filtering
+ *      - Drag & drop file upload area
+ * 
+ * FILE UPLOAD:
+ *   - Accepted: .pdf, .doc, .docx, .txt, .ppt, .pptx
+ *   - Saved to: uploads/notes/ with timestamp prefix
+ *   - move_uploaded_file() moves from PHP temp to final location
+ * 
+ * CSS: assets/css/style.css + assets/css/upload_notes.css
+ * ============================================================
  */
 
 require_once 'config/functions.php';
@@ -10,40 +38,42 @@ $pageTitle = 'Upload Notes';
 $success = '';
 $error = '';
 
-// Get subjects grouped by year/semester
+/* Get subjects for the dropdown (all years/semesters) */
 $subjects = $conn->query("SELECT * FROM subjects ORDER BY year, semester, name");
 
-// Handle form submission
+/* --- Handle POST: Process file upload form --- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = sanitize($_POST['title'] ?? '');
     $content = sanitize($_POST['content'] ?? '');
     $subjectId = (int)($_POST['subject_id'] ?? 0);
     $uploadedBy = $_SESSION['user_id'];
-    
+
     if (empty($title) || empty($subjectId)) {
         $error = 'Please fill in all required fields';
     } else {
         $filePath = null;
-        
-        // Handle file upload
+
+        /* Handle file upload if a file was selected */
         if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = 'uploads/notes/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-            
+            /* Create directory if it doesn't exist */
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+            /* Add timestamp prefix to filename to avoid duplicates */
             $fileName = time() . '_' . basename($_FILES['file']['name']);
             $filePath = $uploadDir . $fileName;
-            
+
+            /* Move file from PHP temp location to our uploads folder */
             if (!move_uploaded_file($_FILES['file']['tmp_name'], $filePath)) {
                 $error = 'Failed to upload file';
             }
         }
-        
+
         if (empty($error)) {
+            /* INSERT note into database */
             $stmt = $conn->prepare("INSERT INTO notes (title, content, file_path, subject_id, uploaded_by) VALUES (?, ?, ?, ?, ?)");
             $stmt->bind_param("sssii", $title, $content, $filePath, $subjectId, $uploadedBy);
-            
+
             if ($stmt->execute()) {
                 $success = 'Note uploaded successfully!';
             } else {
@@ -66,32 +96,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="layout">
         <?php include 'includes/sidebar.php'; ?>
-        
+
         <main class="main-content">
             <?php include 'includes/header.php'; ?>
-            
+
             <section>
+                <!-- Hero banner -->
                 <div class="upload-hero">
                     <h1>📤 Upload Notes</h1>
                     <p>Share study materials with students</p>
                 </div>
-                
+
                 <div class="upload-container">
-                    <?php if ($error): ?>
-                        <?= showAlert($error, 'error') ?>
-                    <?php endif; ?>
-                    
-                    <?php if ($success): ?>
-                        <?= showAlert($success, 'success') ?>
-                    <?php endif; ?>
-                    
+                    <!-- Alert messages -->
+                    <?php if ($error): ?><?= showAlert($error, 'error') ?><?php endif; ?>
+                    <?php if ($success): ?><?= showAlert($success, 'success') ?><?php endif; ?>
+
+                    <!-- Upload form with enctype for file uploads -->
                     <form method="POST" enctype="multipart/form-data" class="upload-form">
                         <div class="form-grid">
+                            <!-- Note title input -->
                             <div class="form-group full-width">
                                 <label for="title">📝 Title *</label>
                                 <input type="text" id="title" name="title" placeholder="Enter note title" required>
                             </div>
-                            
+
+                            <!-- Year selector buttons (FY/SY/TY) -->
                             <div class="form-group">
                                 <label>📅 Year</label>
                                 <div class="year-selector">
@@ -100,7 +130,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <button type="button" class="year-btn" data-year="TY">TY</button>
                                 </div>
                             </div>
-                            
+
+                            <!-- Semester selector buttons (dynamic based on year) -->
                             <div class="form-group">
                                 <label>📚 Semester</label>
                                 <div class="semester-selector">
@@ -108,7 +139,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <button type="button" class="sem-btn" data-sem="2">Sem 2</button>
                                 </div>
                             </div>
-                            
+
+                            <!-- Subject dropdown (filtered by JS based on year/semester) -->
                             <div class="form-group full-width">
                                 <label for="subject_id">📖 Subject *</label>
                                 <select id="subject_id" name="subject_id" required>
@@ -122,12 +154,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <?php endwhile; ?>
                                 </select>
                             </div>
-                            
+
+                            <!-- Description/content textarea -->
                             <div class="form-group full-width">
                                 <label for="content">📋 Description/Content</label>
                                 <textarea id="content" name="content" rows="5" placeholder="Enter note description or content..."></textarea>
                             </div>
-                            
+
+                            <!-- File upload area with drag & drop -->
                             <div class="form-group full-width">
                                 <label>📁 Upload File (PDF, DOC, etc.)</label>
                                 <div class="file-upload-area" id="dropzone">
@@ -139,32 +173,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                             </div>
                         </div>
-                        
-                        <button type="submit" class="btn btn-primary btn-upload">
-                            📤 Upload Note
-                        </button>
+
+                        <button type="submit" class="btn btn-primary btn-upload">📤 Upload Note</button>
                     </form>
                 </div>
             </section>
         </main>
     </div>
-    
+
+    <!-- === JavaScript: Year/Semester Filtering + Drag & Drop === -->
     <script>
-        // Year/Semester filter logic
+        /* --- Year/Semester button logic --- */
+        /* When user clicks FY/SY/TY, update semester buttons and filter subjects */
         const yearBtns = document.querySelectorAll('.year-btn');
         const semBtns = document.querySelectorAll('.sem-btn');
         const subjectSelect = document.getElementById('subject_id');
         const options = subjectSelect.querySelectorAll('option');
-        
-        const semestersByYear = {
-            'FY': [1, 2],
-            'SY': [3, 4],
-            'TY': [5, 6]
-        };
-        
+
+        /* Map: which semesters belong to each year */
+        const semestersByYear = { 'FY': [1, 2], 'SY': [3, 4], 'TY': [5, 6] };
         let selectedYear = 'FY';
         let selectedSem = 1;
-        
+
+        /* Update semester buttons when year changes */
         function updateSemesterButtons() {
             const sems = semestersByYear[selectedYear];
             semBtns.forEach((btn, index) => {
@@ -176,24 +207,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             semBtns[1].classList.remove('active');
             filterSubjects();
         }
-        
+
+        /* Show only subjects matching selected year + semester */
         function filterSubjects() {
             options.forEach(opt => {
-                if (!opt.value) {
-                    opt.style.display = 'block';
-                    return;
-                }
-                const year = opt.dataset.year;
-                const sem = parseInt(opt.dataset.sem);
-                if (year === selectedYear && sem === selectedSem) {
-                    opt.style.display = 'block';
-                } else {
-                    opt.style.display = 'none';
-                }
+                if (!opt.value) { opt.style.display = 'block'; return; }
+                const show = opt.dataset.year === selectedYear && parseInt(opt.dataset.sem) === selectedSem;
+                opt.style.display = show ? 'block' : 'none';
             });
             subjectSelect.value = '';
         }
-        
+
+        /* Year button click handlers */
         yearBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 yearBtns.forEach(b => b.classList.remove('active'));
@@ -202,7 +227,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 updateSemesterButtons();
             });
         });
-        
+
+        /* Semester button click handlers */
         semBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 semBtns.forEach(b => b.classList.remove('active'));
@@ -211,23 +237,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 filterSubjects();
             });
         });
-        
-        // File upload drag & drop
+
+        /* --- Drag & Drop file upload --- */
         const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('file');
         const selectedFile = document.getElementById('selectedFile');
-        
+
+        /* Click dropzone to open file picker */
         dropzone.addEventListener('click', () => fileInput.click());
-        
-        dropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropzone.classList.add('dragover');
-        });
-        
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('dragover');
-        });
-        
+
+        /* Drag over: add visual feedback */
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+
+        /* Drop: assign file to input */
         dropzone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropzone.classList.remove('dragover');
@@ -236,19 +259,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 showSelectedFile(e.dataTransfer.files[0]);
             }
         });
-        
+
+        /* Show selected filename */
         fileInput.addEventListener('change', () => {
-            if (fileInput.files.length) {
-                showSelectedFile(fileInput.files[0]);
-            }
+            if (fileInput.files.length) showSelectedFile(fileInput.files[0]);
         });
-        
+
         function showSelectedFile(file) {
             selectedFile.innerHTML = `<span>📎 ${file.name}</span>`;
             selectedFile.style.display = 'block';
         }
-        
-        // Initial filter
+
+        /* Initial filter on page load */
         filterSubjects();
     </script>
 </body>

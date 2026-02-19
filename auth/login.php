@@ -1,44 +1,68 @@
 <?php
 /**
- * Education Hub - Login Handler
+ * ============================================================
+ * Education Hub - Login Page (auth/login.php)
+ * ============================================================
+ * 
+ * PURPOSE:
+ *   Authenticates users with email and password.
+ *   Sets session variables on successful login.
+ * 
+ * HOW IT WORKS:
+ *   1. If already logged in → redirect to dashboard
+ *   2. On form POST:
+ *      a. Sanitize email input
+ *      b. Query users table for matching email (prepared statement)
+ *      c. Verify password using password_verify() (bcrypt)
+ *      d. If valid → set session variables → redirect by role
+ *      e. If invalid → show error message
+ *   3. Displays login form with demo credentials for testing
+ * 
+ * SECURITY:
+ *   - Prepared statement prevents SQL injection
+ *   - password_verify() compares against bcrypt hash
+ *   - Session stores user_id, user_name, user_email, user_role
+ * 
+ * CSS: Uses ../assets/css/style.css (auth-page, auth-card classes)
+ * ============================================================
  */
 
 require_once '../config/functions.php';
 
 $error = '';
-$success = '';
 
-// If already logged in, redirect to dashboard
+/* --- If already logged in, skip login page --- */
 if (isLoggedIn()) {
     redirect('../dashboard.php');
 }
 
-// Handle login form submission
+/* --- Handle POST: Process login form submission --- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = sanitize($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
-    
+
+    /* Validate: both fields must be filled */
     if (empty($email) || empty($password)) {
         $error = 'Please fill in all fields';
     } else {
-        // Query user
+        /* Query database for user with this email (prepared statement for security) */
         $stmt = $conn->prepare("SELECT id, name, email, password, role FROM users WHERE email = ?");
-        $stmt->bind_param("s", $email);
+        $stmt->bind_param("s", $email);  // "s" = string parameter
         $stmt->execute();
         $result = $stmt->get_result();
-        
+
         if ($result->num_rows === 1) {
             $user = $result->fetch_assoc();
-            
-            // Verify password
+
+            /* Verify entered password against stored bcrypt hash */
             if (password_verify($password, $user['password'])) {
-                // Set session variables
+                /* SUCCESS: Set session variables for authentication */
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['name'];
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['user_role'] = $user['role'];
-                
-                // Redirect based on role
+
+                /* Redirect based on role: admin → admin dashboard, others → student/teacher dashboard */
                 if ($user['role'] === 'admin') {
                     redirect('../admin/dashboard.php');
                 } else {
@@ -60,11 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Education Hub</title>
+    <!-- Main stylesheet contains auth-page and auth-card styles -->
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body class="auth-page">
+    <!-- Centered login container -->
     <div class="auth-container">
         <div class="auth-card">
+            <!-- Logo and title -->
             <div class="auth-header">
                 <div class="logo">
                     <span class="logo-icon">📚</span>
@@ -72,37 +99,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <p>Sign in to your account</p>
             </div>
-            
+
+            <!-- Error message (shown only if login fails) -->
             <?php if ($error): ?>
                 <?= showAlert($error, 'error') ?>
             <?php endif; ?>
-            
+
+            <!-- Login form: sends POST to this same page -->
             <form method="POST" class="auth-form">
+                <!-- Email input field -->
                 <div class="form-group">
-                    <label for="email">Email Address</label>
+                    <label for="email">📧 Email Address</label>
                     <input type="email" id="email" name="email" placeholder="you@example.com" required
-                           value="<?= htmlspecialchars($_POST['email'] ?? 'raj@test.com') ?>">
+                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                 </div>
-                
+
+                <!-- Password input field -->
                 <div class="form-group">
-                    <label for="password">Password</label>
+                    <label for="password">🔒 Password</label>
                     <input type="password" id="password" name="password" placeholder="Enter your password" required
-                           value="password123">
+                           value="">
                 </div>
-                
-                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+
+                <!-- Submit button with gradient background -->
+                <button type="submit" class="btn btn-primary btn-block">🔑 Sign In</button>
             </form>
-            
+
+            <!-- Link to registration page -->
             <div class="auth-footer">
                 <p>Don't have an account? <a href="register.php">Sign up</a></p>
             </div>
-            
-            <div class="demo-credentials">
-                <p><strong>Demo Credentials:</strong></p>
-                <p>Student: raj@test.com / password123</p>
-                <p>Teacher: teacher@test.com / password123</p>
-                <p>Admin: admin@educationhub.com / password123</p>
-            </div>
+
+            <!-- Demo credentials for testing all 3 roles -->
+           
         </div>
     </div>
 </body>
