@@ -42,6 +42,7 @@ require_once 'config/functions.php';
 requireLogin();
 
 $pageTitle = 'Take Quiz';
+$backUrl = 'quiz.php';
 $subjectId = (int)($_GET['subject'] ?? 0);
 $yearFilter = sanitize($_GET['year'] ?? '');
 $semesterFilter = (int)($_GET['semester'] ?? 0);
@@ -201,7 +202,6 @@ $subjectIcons = [
                 <?php elseif ($questions && $questions->num_rows > 0): ?>
                 <!-- ========== STATE 2: QUIZ TAKING ========== -->
                 <div class="quiz-header">
-                    <a href="quiz.php" class="back-link">← Back to Subjects</a>
                     <h2>📝 <?= htmlspecialchars($subjectName) ?></h2>
                 </div>
 

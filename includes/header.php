@@ -40,6 +40,11 @@ $basePath = getBasePath();
 
 <!-- Page header bar: title on left, user info on right -->
 <header class="header">
+    <!-- Optional back button (set $backUrl in page) -->
+    <?php if (!empty($backUrl)): ?>
+        <a href="<?= $basePath . $backUrl ?>" class="back-button" style="margin-right:12px; color:var(--text); text-decoration:none; font-weight:600;">← Back</a>
+    <?php endif; ?>
+
     <!-- Dynamic page title (set by each page's $pageTitle variable) -->
     <h1><?= $pageTitle ?? 'Dashboard' ?></h1>
 

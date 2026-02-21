@@ -28,9 +28,7 @@ $pageTitle = 'My Profile';
                             <?php if (!empty($user['profile_image']) && file_exists(__DIR__ . '/' . $user['profile_image'])): ?>
                                 <img src="<?= htmlspecialchars($user['profile_image']) ?>" alt="Avatar" style="width:120px; height:120px; border-radius:50%; object-fit:cover;">
                             <?php else: ?>
-                                <div style="width:120px; height:120px; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:700;">
-                                    <?= substr(strtoupper($user['name']),0,2) ?>
-                                </div>
+                                <img src="assets/images/default-avatar.svg" alt="Avatar" style="width:120px; height:120px; border-radius:50%; object-fit:cover; background:#eee;">
                             <?php endif; ?>
 
                             <div>
