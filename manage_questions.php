@@ -36,10 +36,91 @@ $pageTitle = 'Manage Questions';
 $success = '';
 $error = '';
 
-/* Get subjects for the dropdown */
-$subjects = $conn->query("SELECT * FROM subjects ORDER BY year, semester, name");
+/* --- Handle Bulk Upload --- */
+if (isset($_POST['bulk_upload'])) {
+    if (isset($_FILES['excel_file']) && $_FILES['excel_file']['error'] === UPLOAD_ERR_OK) {
+        $fileName = $_FILES['excel_file']['name'];
+        $fileTmp = $_FILES['excel_file']['tmp_name'];
+        $fileType = $_FILES['excel_file']['type'];
 
-/* --- Handle POST: Add new question --- */
+        // Check file type (allow CSV for now, Excel would need library)
+        $allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+        if (!in_array($fileType, $allowedTypes) && !str_ends_with(strtolower($fileName), '.csv')) {
+            $error = 'Please upload a CSV or Excel file';
+        } else {
+            // Process CSV file
+            $handle = fopen($fileTmp, 'r');
+            if ($handle !== FALSE) {
+                $header = fgetcsv($handle); // Skip header row
+                $successCount = 0;
+                $errorCount = 0;
+                $errors = [];
+
+                while (($data = fgetcsv($handle)) !== FALSE) {
+                    if (count($data) >= 8) {
+                        $questionText = trim($data[0]);
+                        $optionA = trim($data[1]);
+                        $optionB = trim($data[2]);
+                        $optionC = trim($data[3]);
+                        $optionD = trim($data[4]);
+                        $correctAnswer = strtoupper(trim($data[5]));
+                        $subjectId = (int)trim($data[6]);
+                        $year = trim($data[7]);
+                        $semester = isset($data[8]) ? (int)trim($data[8]) : 1;
+                        $difficulty = isset($data[9]) ? trim($data[9]) : 'medium';
+
+                        // Validate data
+                        if (empty($questionText) || empty($optionA) || empty($optionB) || 
+                            empty($optionC) || empty($optionD) || !in_array($correctAnswer, ['A', 'B', 'C', 'D'])) {
+                            $errorCount++;
+                            continue;
+                        }
+
+                        // Insert question
+                        $stmt = $conn->prepare("INSERT INTO questions (subject_id, question_text, option_a, option_b, option_c, option_d, correct_answer, difficulty, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        $stmt->bind_param("isssssssi", $subjectId, $questionText, $optionA, $optionB, $optionC, $optionD, $correctAnswer, $difficulty, $createdBy);
+                        
+                        if ($stmt->execute()) {
+                            $successCount++;
+                        } else {
+                            $errorCount++;
+                        }
+                        $stmt->close();
+                    } else {
+                        $errorCount++;
+                    }
+                }
+                fclose($handle);
+
+                if ($successCount > 0) {
+                    $success = "Bulk upload completed! Successfully added $successCount questions.";
+                    if ($errorCount > 0) {
+                        $success .= " $errorCount questions failed to import.";
+                    }
+                } else {
+                    $error = "No questions were successfully imported. Please check your file format.";
+                }
+            } else {
+                $error = "Failed to read the uploaded file";
+            }
+        }
+    } else {
+        $error = "Please select a file to upload";
+    }
+}
+
+/* --- Handle Template Download --- */
+if (isset($_GET['download_template'])) {
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="question_template.csv"');
+    
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_option', 'subject_id', 'year', 'semester', 'difficulty']);
+    fputcsv($output, ['What is 2+2?', '3', '4', '5', '6', 'B', '1', 'FY', '1', 'easy']);
+    fputcsv($output, ['What does HTML stand for?', 'HyperText Markup Language', 'High Tech Modern Language', 'Home Tool Markup Language', 'Hyper Transfer Markup Language', 'A', '9', 'SY', '4', 'medium']);
+    fclose($output);
+    exit;
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $questionText = sanitize($_POST['question_text'] ?? '');
     $subjectId = (int)($_POST['subject_id'] ?? 0);
@@ -97,6 +178,39 @@ $myQuestions = $conn->query("
             <?php include 'includes/header.php'; ?>
 
             <section>
+                <!-- === Bulk Upload Section === -->
+                <div class="card" style="margin-bottom: 32px;">
+                    <h3 style="margin-bottom: 24px;">📊 Bulk Question Upload</h3>
+
+                    <div style="margin-bottom: 20px;">
+                        <p style="color: var(--text-muted); margin-bottom: 16px;">
+                            Upload multiple questions at once using Excel or CSV format. Download the template to see the required format.
+                        </p>
+
+                        <a href="?download_template=1" class="btn btn-secondary" style="margin-right: 12px;">
+                            📥 Download Template
+                        </a>
+
+                        <div style="display: inline-block; background: var(--surface-light); padding: 12px; border-radius: 8px; margin-top: 12px;">
+                            <strong>Required Columns:</strong> question_text, option_a, option_b, option_c, option_d, correct_option, subject_id, year, semester
+                        </div>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="excel_file">📎 Select Excel/CSV File *</label>
+                            <input type="file" id="excel_file" name="excel_file" accept=".csv,.xlsx,.xls" required>
+                            <small style="color: var(--text-muted);">
+                                Supported formats: CSV, Excel (.xlsx, .xls) - Max 5MB
+                            </small>
+                        </div>
+
+                        <button type="submit" name="bulk_upload" class="btn btn-primary">
+                            🚀 Upload Questions
+                        </button>
+                    </form>
+                </div>
+
                 <!-- === Add Question Form === -->
                 <div class="card" style="margin-bottom: 32px;">
                     <h3 style="margin-bottom: 24px;">➕ Add New Question</h3>

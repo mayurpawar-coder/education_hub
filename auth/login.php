@@ -56,22 +56,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             /* Verify entered password against stored bcrypt hash */
             if (password_verify($password, $user['password'])) {
-                // If user is a teacher, ensure their account is approved
-                if ($user['role'] === 'teacher' && isset($user['status']) && $user['status'] !== 'approved') {
-                    $error = 'Your teacher registration is pending approval. Please wait for admin approval.';
+                /* Check if teacher is approved */
+                if ($user['role'] === 'teacher' && $user['status'] !== 'approved') {
+                    $error = 'Your teacher account is pending approval. Please wait for admin to review your registration.';
                 } else {
-                /* SUCCESS: Set session variables for authentication */
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_name'] = $user['name'];
-                $_SESSION['user_email'] = $user['email'];
-                $_SESSION['user_role'] = $user['role'];
+                    /* SUCCESS: Set session variables for authentication */
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['user_name'] = $user['name'];
+                    $_SESSION['user_email'] = $user['email'];
+                    $_SESSION['user_role'] = $user['role'];
 
-                /* Redirect based on role: admin → admin dashboard, others → student/teacher dashboard */
-                if ($user['role'] === 'admin') {
-                    redirect('../admin/dashboard.php');
-                } else {
-                    redirect('../dashboard.php');
-                }
+                    /* Redirect based on role: admin → admin dashboard, others → student/teacher dashboard */
+                    if ($user['role'] === 'admin') {
+                        redirect('../admin/dashboard.php');
+                    } else {
+                        redirect('../dashboard.php');
+                    }
                 }
             } else {
                 $error = 'Invalid email or password';

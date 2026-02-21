@@ -38,6 +38,25 @@ $pageTitle = 'Upload Notes';
 $success = '';
 $error = '';
 
+/* --- Editing support: if ?edit=ID, load existing note to prefill form --- */
+$editing = false;
+$existingFile = '';
+if (isset($_GET['edit'])) {
+    $editId = (int)$_GET['edit'];
+    $row = $conn->query("SELECT * FROM notes WHERE id = $editId");
+    if ($row && $row->num_rows) {
+        $noteRow = $row->fetch_assoc();
+        $editing = true;
+        $editId = (int)$noteRow['id'];
+        $title = htmlspecialchars($noteRow['title']);
+        $content = htmlspecialchars($noteRow['content']);
+        $subjectId = (int)$noteRow['subject_id'];
+        $existingFile = $noteRow['file_path'];
+    } else {
+        $error = 'Note not found for editing.';
+    }
+}
+
 /* Get subjects for the dropdown (all years/semesters) */
 $subjects = $conn->query("SELECT * FROM subjects ORDER BY year, semester, name");
 
@@ -70,16 +89,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (empty($error)) {
-            /* INSERT note into database */
-            $stmt = $conn->prepare("INSERT INTO notes (title, content, file_path, subject_id, uploaded_by) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssii", $title, $content, $filePath, $subjectId, $uploadedBy);
-
-            if ($stmt->execute()) {
-                $success = 'Note uploaded successfully!';
+            if (!empty($_POST['edit_id'])) {
+                // Update existing note
+                $editId = (int)$_POST['edit_id'];
+                // If a new file uploaded, remove old file
+                if ($filePath && !empty($existingFile) && file_exists($existingFile)) {
+                    @unlink($existingFile);
+                } elseif (!$filePath && !empty($existingFile)) {
+                    // Keep old file if no new file uploaded
+                    $filePath = $existingFile;
+                }
+                $stmt = $conn->prepare("UPDATE notes SET title = ?, content = ?, file_path = ?, subject_id = ? WHERE id = ?");
+                $stmt->bind_param("sssii", $title, $content, $filePath, $subjectId, $editId);
+                if ($stmt->execute()) {
+                    $success = 'Note updated successfully!';
+                } else {
+                    $error = 'Failed to update note';
+                }
+                $stmt->close();
             } else {
-                $error = 'Failed to save note';
+                /* INSERT note into database */
+                $stmt = $conn->prepare("INSERT INTO notes (title, content, file_path, subject_id, uploaded_by) VALUES (?, ?, ?, ?, ?)");
+                $stmt->bind_param("sssii", $title, $content, $filePath, $subjectId, $uploadedBy);
+
+                if ($stmt->execute()) {
+                    $success = 'Note uploaded successfully!';
+                } else {
+                    $error = 'Failed to save note';
+                }
+                $stmt->close();
             }
-            $stmt->close();
         }
     }
 }

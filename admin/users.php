@@ -65,8 +65,8 @@ if (isset($_POST['change_role'])) {
     }
 }
 
-/* Get all users */
-$users = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
+/* Get all users, sorted with pending teachers first */
+$users = $conn->query("SELECT * FROM users ORDER BY CASE WHEN status = 'pending' AND role = 'teacher' THEN 0 ELSE 1 END, created_at DESC");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -135,7 +135,10 @@ $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
                                         </form>
                                     </td>
                                     <td>
-                                        <?= htmlspecialchars($user['status'] ?? 'approved') ?>
+                                        <?php $status = $user['status'] ?? 'approved'; ?>
+                                        <span class="status-badge status-<?= $status ?>">
+                                            <?= htmlspecialchars(ucfirst($status)) ?>
+                                        </span>
                                     </td>
                                     <td><?= formatDate($user['created_at']) ?></td>
                                     <td>

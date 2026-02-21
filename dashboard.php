@@ -52,6 +52,10 @@ $subjects = $conn->query("SELECT * FROM subjects ORDER BY year, semester, name")
             <!-- Top header bar with page title and user info -->
             <?php include 'includes/header.php'; ?>
 
+            <?php if ($user['role'] === 'teacher' && ($user['status'] ?? 'approved') === 'pending'): ?>
+                <?= showAlert('Your teacher registration is pending approval. Please wait for admin approval.', 'warning') ?>
+            <?php endif; ?>
+
             <section class="dashboard-content">
 
                 <!-- === Statistics Cards === -->

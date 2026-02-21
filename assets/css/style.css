@@ -333,6 +333,13 @@ tr:hover { background:var(--primary-lighter); }                        /* Hover 
 .badge-danger  { background:var(--danger-light);  color:var(--danger);  }
 .role-chip { padding:4px 12px; border-radius:var(--r-full); font:600 12px inherit; } /* Role labels  */
 
+/* Status badges for admin users table */
+.status-badge { display:inline-flex; align-items:center; padding:4px 8px;
+                border-radius:var(--r-sm); font:600 11px inherit; text-transform:uppercase; }
+.status-approved { background:var(--success-light); color:var(--success); }
+.status-pending  { background:var(--warning-light); color:var(--warning); }
+.status-rejected { background:var(--danger-light);  color:var(--danger);  }
+
 
 /* ============================================================
    11. UTILITIES — reusable helper classes

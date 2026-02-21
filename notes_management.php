@@ -10,6 +10,16 @@ if (!in_array($role, ['teacher', 'admin'])) {
 
 $tab = $_GET['tab'] ?? 'all';
 $pageTitle = 'Notes Management';
+// Base path for correct relative links in iframe
+$basePath = getBasePath();
+
+// Determine iframe source using server-side base path to avoid 404s from incorrect relative URLs
+switch ($tab) {
+    case 'my': $iframeSrc = $basePath . 'my_uploads.php'; break;
+    case 'upload': $iframeSrc = $basePath . 'upload_notes.php'; break;
+    case 'search': $iframeSrc = $basePath . 'search_notes.php'; break;
+    default: $iframeSrc = $basePath . 'manage_notes.php'; break;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -38,7 +48,7 @@ $pageTitle = 'Notes Management';
                 </div>
 
                 <div class="tab-content" style="min-height:600px; border:1px solid var(--muted); padding:0; margin-top:12px;">
-                    <iframe id="notes-frame" src="" style="width:100%; height:700px; border:0;" title="Notes Management Content"></iframe>
+                    <iframe id="notes-frame" src="<?= $iframeSrc ?>" style="width:100%; height:700px; border:0;" title="Notes Management Content"></iframe>
                 </div>
 
             </section>
@@ -46,17 +56,7 @@ $pageTitle = 'Notes Management';
     </div>
 
     <script>
-        (function() {
-            var tab = '<?= $tab ?>';
-            var iframe = document.getElementById('notes-frame');
-            var base = '';
-            // Set iframe src based on tab
-            if (tab === 'all') iframe.src = 'manage_notes.php';
-            else if (tab === 'my') iframe.src = 'my_uploads.php';
-            else if (tab === 'upload') iframe.src = 'upload_notes.php';
-            else if (tab === 'search') iframe.src = 'search_notes.php';
-            else iframe.src = 'manage_notes.php';
-        })();
+        // no-op JS kept for compatibility; iframe src is set server-side
     </script>
 </body>
 </html>

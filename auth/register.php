@@ -104,9 +104,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->bind_param("sssssss", $name, $email, $hashedPassword, $role, $status, $mobile, $profileImagePath);
 
             if ($stmt->execute()) {
-                $success = 'Registration successful! Redirecting to login...';
-                /* Auto-redirect to login page after 2 seconds */
-                header("refresh:2;url=login.php");
+                if ($role === 'teacher') {
+                    $success = 'Registration successful! Your teacher account is pending admin approval. You will be notified once approved. Redirecting to login...';
+                } else {
+                    $success = 'Registration successful! Redirecting to login...';
+                }
+                /* Auto-redirect to login page after 3 seconds */
+                header("refresh:3;url=login.php");
             } else {
                 $error = 'Registration failed. Please try again.';
             }
