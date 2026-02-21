@@ -15,30 +15,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = sanitize($_POST['name'] ?? $user['name']);
     $mobile = sanitize($_POST['mobile'] ?? $user['mobile']);
 
-    // Handle profile image upload
-    $profileImagePath = $user['profile_image'] ?? null;
-    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
-        $allowed = ['image/jpeg', 'image/png'];
-        $fileType = $_FILES['profile_image']['type'];
-        $fileSize = $_FILES['profile_image']['size'];
-        if (!in_array($fileType, $allowed)) {
-            $error = 'Profile image must be JPG or PNG';
-        } elseif ($fileSize > 2 * 1024 * 1024) {
-            $error = 'Profile image must be smaller than 2MB';
-        } else {
-            $uploadsDir = __DIR__ . '/uploads/profile/';
-            if (!is_dir($uploadsDir)) mkdir($uploadsDir, 0755, true);
-            $ext = $fileType === 'image/png' ? '.png' : '.jpg';
-            $destName = time() . '_' . preg_replace('/[^a-zA-Z0-9-_\.]/', '', basename($_FILES['profile_image']['name']));
-            $destPath = $uploadsDir . $destName;
-            if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $destPath)) {
-                // Remove old image if exists
-                if (!empty($profileImagePath) && file_exists(__DIR__ . '/' . $profileImagePath)) {
-                    @unlink(__DIR__ . '/' . $profileImagePath);
-                }
-                $profileImagePath = 'uploads/profile/' . $destName;
+    // Validate mobile number if provided
+    if (!empty($mobile) && !preg_match('/^\d{10}$/', $mobile)) {
+        $error = 'Mobile number must be exactly 10 digits';
+    }
+
+    // Handle profile image upload only if no mobile validation error
+    if (empty($error)) {
+        $profileImagePath = $user['profile_image'] ?? null;
+        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $allowed = ['image/jpeg', 'image/png'];
+            $fileType = $_FILES['profile_image']['type'];
+            $fileSize = $_FILES['profile_image']['size'];
+            if (!in_array($fileType, $allowed)) {
+                $error = 'Profile image must be JPG or PNG';
+            } elseif ($fileSize > 2 * 1024 * 1024) {
+                $error = 'Profile image must be smaller than 2MB';
             } else {
-                $error = 'Failed to upload profile image';
+                $uploadsDir = __DIR__ . '/uploads/profile/';
+                if (!is_dir($uploadsDir)) mkdir($uploadsDir, 0755, true);
+                $ext = $fileType === 'image/png' ? '.png' : '.jpg';
+                $destName = time() . '_' . preg_replace('/[^a-zA-Z0-9-_\.]/', '', basename($_FILES['profile_image']['name']));
+                $destPath = $uploadsDir . $destName;
+                if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $destPath)) {
+                    // Remove old image if exists
+                    if (!empty($profileImagePath) && file_exists(__DIR__ . '/' . $profileImagePath)) {
+                        @unlink(__DIR__ . '/' . $profileImagePath);
+                    }
+                    $profileImagePath = 'uploads/profile/' . $destName;
+                } else {
+                    $error = 'Failed to upload profile image';
+                }
             }
         }
     }
@@ -88,7 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <div class="form-group">
                             <label for="mobile">Mobile</label>
-                            <input type="text" id="mobile" name="mobile" value="<?= htmlspecialchars($user['mobile'] ?? '') ?>">
+                            <input type="text" id="mobile" name="mobile" 
+                                   pattern="\d{10}" maxlength="10" title="Please enter exactly 10 digits"
+                                   value="<?= htmlspecialchars($user['mobile'] ?? '') ?>">
+                            <small style="color: var(--text-muted); font-size: 12px;">Enter 10-digit mobile number (optional)</small>
                         </div>
 
                         <div class="form-group">

@@ -60,6 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!in_array($role, ['student', 'teacher'])) {
         /* Only student/teacher can self-register; admin is created manually */
         $error = 'Invalid role selected';
+    } elseif (!empty($mobile) && !preg_match('/^\d{10}$/', $mobile)) {
+        $error = 'Mobile number must be exactly 10 digits';
     } else {
         /* Check if email already exists */
         $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
@@ -72,36 +74,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 /* Hash password with bcrypt (secure one-way hash) */
                 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-                /* Determine initial status: teachers -> pending, students -> approved */
+                /* Determine initial status: teachers require admin approval, students are approved */
                 $status = $role === 'teacher' ? 'pending' : 'approved';
 
-                /* Handle optional profile image upload */
-                $profileImagePath = null;
-                if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
-                    $allowed = ['image/jpeg', 'image/png'];
-                    $fileType = $_FILES['profile_image']['type'];
-                    $fileSize = $_FILES['profile_image']['size'];
-                    if (!in_array($fileType, $allowed)) {
-                        $error = 'Profile image must be JPG or PNG';
-                    } elseif ($fileSize > 2 * 1024 * 1024) { // 2MB limit
-                        $error = 'Profile image must be smaller than 2MB';
-                    } else {
-                        $uploadsDir = __DIR__ . '/../uploads/profile/';
-                        if (!is_dir($uploadsDir)) mkdir($uploadsDir, 0755, true);
-                        $ext = $fileType === 'image/png' ? '.png' : '.jpg';
-                        $destName = time() . '_' . preg_replace('/[^a-zA-Z0-9-_\.]/', '', basename($_FILES['profile_image']['name']));
-                        $destPath = $uploadsDir . $destName;
-                        if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $destPath)) {
-                            // Store relative path for DB
-                            $profileImagePath = 'uploads/profile/' . $destName;
-                        }
-                    }
-                }
-
-                /* Insert new user into database (include mobile, status, profile_image)
+                /* Insert new user into database (include mobile, status)
                    Make sure the migration has been applied to add these columns */
-                $stmt = $conn->prepare("INSERT INTO users (name, email, password, role, status, mobile, profile_image) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("sssssss", $name, $email, $hashedPassword, $role, $status, $mobile, $profileImagePath);
+                $stmt = $conn->prepare("INSERT INTO users (name, email, password, role, status, mobile) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("ssssss", $name, $email, $hashedPassword, $role, $status, $mobile);
 
             if ($stmt->execute()) {
                 if ($role === 'teacher') {
@@ -148,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <!-- Registration form -->
-            <form method="POST" enctype="multipart/form-data" class="auth-form">
+            <form method="POST" class="auth-form">
                 <!-- Full Name -->
                 <div class="form-group">
                     <label for="name">👤 Full Name</label>
@@ -166,14 +145,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <!-- Mobile -->
                 <div class="form-group">
                     <label for="mobile">📱 Mobile Number</label>
-                    <input type="text" id="mobile" name="mobile" placeholder="e.g. +919876543210"
+                    <input type="text" id="mobile" name="mobile" placeholder="e.g. 9876543210"
+                           pattern="\d{10}" maxlength="10" title="Please enter exactly 10 digits"
                            value="<?= htmlspecialchars($_POST['mobile'] ?? '') ?>">
-                </div>
-
-                <!-- Profile Image -->
-                <div class="form-group">
-                    <label for="profile_image">🖼️ Profile Image (optional)</label>
-                    <input type="file" id="profile_image" name="profile_image" accept="image/png, image/jpeg">
+                    <small style="color: var(--text-muted); font-size: 12px;">Enter 10-digit mobile number</small>
                 </div>
 
                 <!-- Role selector: Student or Teacher only -->

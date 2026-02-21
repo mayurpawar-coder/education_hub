@@ -1,150 +1,238 @@
 /**
  * ============================================================
- * Education Hub — Search Notes Stylesheet (search_notes.css)
+ * Education Hub - Search Notes Stylesheet (search_notes.css)
  * ============================================================
- * LOADED BY  : search_notes.php
- * DEPENDS ON : style.css (--variables, .btn, .hero-section,
- *              .empty-state, .badge)
- * DO NOT ADD : sidebar, table, button, alert styles here.
  *
- * PAGE FLOW (search_notes.php):
- *   1. Reads URL params: ?year=FY&semester=1&subject=5&search=PHP
- *   2. Builds SQL: SELECT n.*, s.name, u.name FROM notes n
+ * FILE NAVIGATION:
+ *   LOADED BY: search_notes.php (via <link rel="stylesheet">)
+ *   DEPENDS ON: style.css (CSS variables, base styles)
+ *   ALSO USES: quiz.css year-tab/semester-tab styles (shared classes)
+ *
+ * BACKEND FLOW (search_notes.php):
+ *   1. Reads filters from URL: ?year=FY&semester=1&subject=5&search=PHP
+ *   2. Builds dynamic SQL: SELECT n.*, s.name, u.name FROM notes n
  *      JOIN subjects s ON n.subject_id = s.id
  *      JOIN users u ON n.uploaded_by = u.id
- *      WHERE (conditions from filters)
- *      ORDER BY n.created_at DESC
- *   3. Renders: year-tabs → semester-tabs → search bar → notes grid
- *   4. Each card: download button → download_notes.php?id=X
- *      download_notes.php: increments n.downloads, serves file header
+ *      WHERE conditions based on filters
+ *   3. Renders year tabs → semester tabs → search bar → note cards
+ *   4. Download button links to download_notes.php?id=X
  *
- * DB TABLES: notes · subjects · users
- *   notes(id, title, content, file_path, subject_id, uploaded_by, downloads, created_at)
- *   subjects(id, name, color, year, semester)
- *   users(id, name)
+ * DATABASE TABLES:
+ *   - notes (id, title, content, file_path, subject_id, uploaded_by, downloads)
+ *   - subjects (id, name, color, year, semester)
+ *   - users (id, name) — for uploader info
+ *
+ * NAVIGATION FROM THIS PAGE:
+ *   → download_notes.php?id=X (file download handler)
+ *   → Sidebar links (all pages)
+ *
+ * COLOR SCHEME: Royal Blue + Sky Blue (inherits from style.css)
  * ============================================================
  */
 
 
-/* ============================================================
-   YEAR & SEMESTER TABS
-   Reuses same tab structure as quiz.php for consistency.
-   Links: ?year=FY, ?year=FY&semester=1
-   Active class set by PHP: if($year==='FY') → .active
-   ============================================================ */
-.year-tabs { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; }   /* Year tab row         */
-
-.year-tab {
-    display:flex; align-items:center; gap:8px; padding:12px 20px;            /* Icon + text row      */
-    background:var(--surface); border:2px solid var(--border);
-    border-radius:var(--r-md); color:var(--text); font:500 14px inherit; transition:var(--ease);
+/* ===========================================================
+   HERO SECTION — Page title with gradient bg
+   =========================================================== */
+.notes-hero {
+    text-align: center;
+    padding: 36px 24px;
+    margin-bottom: 24px;
+    background: var(--gradient-hero);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
 }
-.year-tab:hover  { border-color:var(--primary); transform:translateY(-2px); }
-.year-tab.active { background:var(--primary); border-color:var(--primary); color:#fff; }
 
-.year-badge      { padding:4px 10px; border-radius:6px; font:700 12px inherit; } /* Year label pill  */
-.year-badge.fy   { background:var(--success); color:#fff; }                       /* FY = green       */
-.year-badge.sy   { background:var(--warning); color:#fff; }                       /* SY = amber       */
-.year-badge.ty   { background:var(--danger);  color:#fff; }                       /* TY = red         */
-.year-tab.active .year-badge { background:rgba(255,255,255,.3); }                 /* Transparent on active */
-
-.semester-tabs {
-    display:flex; gap:8px; margin-bottom:24px; padding:6px;                  /* Pill tab container   */
-    background:var(--surface); border-radius:var(--r-md); border:1px solid var(--border);
+.notes-hero h1 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
-.semester-tab {
-    padding:10px 20px; background:transparent; border:none;                  /* Borderless pill      */
-    border-radius:var(--r-sm); color:var(--text-muted); font:500 14px inherit; transition:var(--ease);
-}
-.semester-tab:hover  { background:var(--surface-light); color:var(--text); }
-.semester-tab.active { background:var(--primary); color:#fff; }
+
+.notes-hero p { color: var(--text-muted); font-size: 15px; }
 
 
-/* ============================================================
-   SEARCH BAR
-   3-part row: text input (flex:1) + subject select + search btn
-   Wraps to column on mobile via .search-wrap flex rules.
-   PHP reads: $_GET['search'], $_GET['subject'] for SQL WHERE.
-   ============================================================ */
+/* ===========================================================
+   SEARCH BAR — Input + subject dropdown + search button
+   White container with subtle shadow, wraps on mobile
+   =========================================================== */
 .modern-search {
-    display:flex; gap:12px; align-items:center; flex-wrap:wrap;  /* Responsive flex row              */
-    padding:16px; background:var(--surface); border-radius:var(--r-lg);
-    border:1px solid var(--border); margin-bottom:24px; box-shadow:var(--shadow-sm);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 16px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
 }
+
+/* Search input wrapper: holds icon + text input */
 .search-input-wrapper {
-    flex:1; min-width:250px; position:relative;                   /* Stretchy input wrapper           */
+    flex: 1;
+    min-width: 250px;
+    position: relative;
 }
+
+/* Search emoji icon positioned inside input */
 .search-input-wrapper .search-icon {
-    position:absolute; left:16px; top:50%; transform:translateY(-50%); font-size:18px; /* Icon inside  */
+    position: absolute;
+    left: 16px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
 }
-.search-input {
-    width:100%; padding:12px 14px 12px 46px;                      /* Left-pad for icon               */
-    border:2px solid var(--border); border-radius:var(--r-md);
-    background:var(--surface-light); color:var(--text); font:15px/1.5 inherit; transition:var(--ease);
-}
-.search-input:focus { border-color:var(--primary); outline:none; box-shadow:0 0 0 3px rgba(26,86,219,.1); }
 
+/* Text input: left-padded for icon space */
+.modern-search .search-input {
+    width: 100%;
+    padding: 12px 14px 12px 46px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface-light);
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    transition: var(--transition);
+}
+
+.modern-search .search-input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+}
+
+/* Subject dropdown */
 .modern-select {
-    padding:12px 18px; border:2px solid var(--border); border-radius:var(--r-md); /* Subject dropdown */
-    background:var(--surface-light); color:var(--text); font:14px inherit; min-width:200px; transition:var(--ease);
+    padding: 12px 18px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface-light);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    min-width: 200px;
+    cursor: pointer;
+    transition: var(--transition);
 }
-.modern-select:focus { border-color:var(--primary); outline:none; }
 
-.btn-search { padding:12px 24px; font-weight:600; }               /* Piggybacks .btn from style.css  */
+.modern-select:focus { border-color: var(--primary); outline: none; }
+
+.btn-search { padding: 12px 24px; font-weight: 600; }
 
 
-/* ============================================================
-   NOTES GRID — Cards showing downloadable study materials
-   PHP renders one .modern-card per row in $notes result set.
-   card::before = hidden top accent stripe; reveals on :hover.
-   ============================================================ */
+/* ===========================================================
+   NOTE CARDS — Grid of downloadable notes
+   Each card: subject badge, title, uploader, date, download btn
+   =========================================================== */
 .notes-grid {
-    display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; /* Responsive  */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
 }
+
 .modern-card {
-    background:var(--surface); border-radius:var(--r-xl); padding:22px;   /* White rounded card      */
-    border:1px solid var(--border); box-shadow:var(--shadow-sm); transition:var(--ease);
-    position:relative; overflow:hidden;
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    padding: 22px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
 }
-.modern-card::before {                                                     /* Top stripe (hover only) */
-    content:''; position:absolute; top:0;left:0;right:0; height:4px;
-    background:var(--g-primary); opacity:0; transition:opacity .3s;
-}
-.modern-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-md); }
-.modern-card:hover::before { opacity:1; }                                  /* Reveal stripe on hover  */
 
+/* Top accent stripe (appears on hover) */
+.modern-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--gradient-primary);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.modern-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+.modern-card:hover::before { opacity: 1; }
+
+/* Note header: subject badge + semester label */
 .note-header {
-    display:flex; justify-content:space-between; align-items:center;   /* Badge row at card top     */
-    margin-bottom:14px; flex-wrap:wrap; gap:8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
 }
+
 .subject-badge {
-    padding:5px 12px; border-radius:var(--r-full); font:600 12px inherit; /* Subject color pill      */
+    padding: 5px 12px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
 }
+
 .semester-badge {
-    padding:4px 10px; background:var(--primary-lighter); border-radius:6px; /* "Sem 1" label         */
-    font:600 11px inherit; color:var(--primary);
+    padding: 4px 10px;
+    background: var(--primary-lighter);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--primary);
 }
-.note-title   { font-size:17px; font-weight:700; margin-bottom:10px; line-height:1.4; color:var(--text); }
-.note-meta    {                                                             /* Uploader · Date row     */
-    display:flex; flex-wrap:wrap; gap:12px; margin-bottom:10px; font-size:13px; color:var(--text-muted);
+
+.note-title { font-size: 17px; font-weight: 700; margin-bottom: 10px; line-height: 1.4; color: var(--text); }
+
+.note-meta {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    margin-bottom: 10px; font-size: 13px; color: var(--text-muted);
 }
-.note-content { color:var(--text-muted); font-size:14px; margin-bottom:14px; line-height:1.5; }
 
-.btn-download {                                                             /* Download CTA button     */
-    display:inline-flex; align-items:center; gap:6px; padding:10px 18px;
-    border-radius:var(--r-sm); font-weight:600; transition:var(--ease);
+.note-content { color: var(--text-muted); font-size: 14px; margin-bottom: 14px; line-height: 1.5; }
+
+/* Download button */
+.btn-download {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 18px; border-radius: var(--radius-sm);
+    font-weight: 600; transition: var(--transition);
 }
-.btn-download:hover { transform:translateY(-2px); box-shadow:var(--shadow-btn); }
+.btn-download:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-primary);
+}
 
 
-/* ============================================================
-   RESPONSIVE — Stack search bar on small screens
-   ============================================================ */
-@media (max-width:768px) {
-    .year-tabs            { overflow-x:auto; flex-wrap:nowrap; padding-bottom:8px; } /* Scroll tabs   */
-    .year-tab             { white-space:nowrap; padding:10px 16px; font-size:14px; }
-    .modern-search        { flex-direction:column; }                         /* Stack vertically      */
-    .search-input-wrapper { width:100%; min-width:unset; }
-    .modern-select        { width:100%; min-width:unset; }
-    .btn-search           { width:100%; }
+/* ===========================================================
+   EMPTY STATE — No notes match filters
+   =========================================================== */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center; padding: 60px 30px;
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    border: 2px dashed var(--border);
+}
+.empty-icon { font-size: 56px; margin-bottom: 14px; }
+.empty-state h3 { font-size: 22px; margin-bottom: 6px; color: var(--text); }
+.empty-state p { color: var(--text-muted); }
+
+
+/* ===========================================================
+   RESPONSIVE
+   =========================================================== */
+@media (max-width: 768px) {
+    .year-tabs { overflow-x: auto; padding-bottom: 8px; flex-wrap: nowrap; }
+    .year-tab { white-space: nowrap; padding: 10px 16px; font-size: 14px; }
+    .modern-search { flex-direction: column; }
+    .search-input-wrapper { width: 100%; min-width: unset; }
+    .modern-select { width: 100%; min-width: unset; }
+    .btn-search { width: 100%; }
 }

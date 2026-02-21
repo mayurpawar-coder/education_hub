@@ -260,7 +260,7 @@ $subjectIcons = [
                 <!-- ========== STATE 1: SUBJECT SELECTION ========== -->
                 <div class="quiz-hero">
                     <h1>🎯 Take a Quiz</h1>
-                    <p>Test your knowledge and track your progress</p>
+                    <p>Challenge yourself with subject quizzes</p>
                 </div>
 
                 <!-- Year tabs -->

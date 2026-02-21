@@ -30,6 +30,8 @@ $pageTitle = 'Admin Dashboard';
 $totalUsers = $conn->query("SELECT COUNT(*) as c FROM users")->fetch_assoc()['c'];
 $totalStudents = $conn->query("SELECT COUNT(*) as c FROM users WHERE role = 'student'")->fetch_assoc()['c'];
 $totalTeachers = $conn->query("SELECT COUNT(*) as c FROM users WHERE role = 'teacher'")->fetch_assoc()['c'];
+$totalApprovedTeachers = $conn->query("SELECT COUNT(*) as c FROM users WHERE role = 'teacher' AND status = 'approved'")->fetch_assoc()['c'];
+$totalPendingTeachers = $conn->query("SELECT COUNT(*) as c FROM users WHERE role = 'teacher' AND status = 'pending'")->fetch_assoc()['c'];
 $totalSubjects = $conn->query("SELECT COUNT(*) as c FROM subjects")->fetch_assoc()['c'];
 $totalNotes = $conn->query("SELECT COUNT(*) as c FROM notes")->fetch_assoc()['c'];
 $totalQuestions = $conn->query("SELECT COUNT(*) as c FROM questions")->fetch_assoc()['c'];
@@ -88,8 +90,11 @@ $allQuestions = $conn->query("
                     </div>
                     <div class="stat-card success">
                         <div class="stat-icon">👨‍🏫</div>
-                        <div class="stat-value"><?= $totalTeachers ?></div>
-                        <div class="stat-label">Teachers</div>
+                        <div class="stat-value"><?= $totalApprovedTeachers ?>/<?= $totalTeachers ?></div>
+                        <div class="stat-label">Approved Teachers</div>
+                        <?php if ($totalPendingTeachers > 0): ?>
+                        <div style="font-size: 11px; color: var(--warning); margin-top: 4px;">⏳ <?= $totalPendingTeachers ?> pending approval</div>
+                        <?php endif; ?>
                     </div>
                     <div class="stat-card warning">
                         <div class="stat-icon">📚</div>

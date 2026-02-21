@@ -68,7 +68,7 @@ $basePath = getBasePath();
 
                 <!-- Dropdown menu (hidden by default) -->
                 <div id="avatar-dropdown" style="display:none; position:absolute; right:0; top:48px; background:#fff; border:1px solid var(--border); border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.08); min-width:160px; z-index:50;">
-                    <a href="<?= $basePath ?>profile.php" style="display:block; padding:10px 12px; color:var(--text); text-decoration:none;">My Profile</a>
+                    <a href="<?= ($user && $user['role'] === 'student') ? $basePath . 'profile.php' : $basePath . 'teacher_profile.php' ?>" style="display:block; padding:10px 12px; color:var(--text); text-decoration:none;">My Profile</a>
                     <a href="<?= $basePath ?>edit_profile.php" style="display:block; padding:10px 12px; color:var(--text); text-decoration:none;">Edit Profile</a>
                     <a href="<?= $basePath ?>auth/logout.php" style="display:block; padding:10px 12px; color:var(--text); text-decoration:none;">Logout</a>
                 </div>

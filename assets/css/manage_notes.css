@@ -1,16 +1,60 @@
 /* Themed styles for Manage Notes table and actions — matches core theme */
-.table { border-radius: 10px; overflow: hidden; }
-.table thead th { background: var(--primary-lighter); color: var(--text-muted); }
-.table tbody tr td { vertical-align: middle; }
-.note-card .btn { margin-right: 6px; }
-.btn-sm { padding:6px 10px; font-size:13px; border-radius:8px; }
-.btn-danger { background:var(--danger); color:#fff; border:none; }
-.btn-danger:hover { opacity:.95; transform:translateY(-1px); }
-.card-header .btn { align-self:center; }
+.table {
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.table thead th {
+    background: var(--primary-lighter);
+    color: var(--text-muted);
+}
+
+.table tbody tr td {
+    vertical-align: middle;
+}
+
+.note-card .btn {
+    margin-right: 6px;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    font-size: 13px;
+    border-radius: var(--radius-sm);
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+}
+
+.card-header .btn {
+    align-self: center;
+}
 
 /* Responsive tweaks */
-@media (max-width:768px) {
-    .table thead { display:none; }
-    .table tbody tr { display:block; margin-bottom:12px; background:var(--surface); padding:12px; border-radius:8px; }
-    .table tbody tr td { display:flex; justify-content:space-between; padding:8px 0; }
+@media (max-width: 768px) {
+    .table thead {
+        display: none;
+    }
+    
+    .table tbody tr {
+        display: block;
+        margin-bottom: 12px;
+        background: var(--surface);
+        padding: 12px;
+        border-radius: var(--radius-sm);
+    }
+    
+    .table tbody tr td {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+    }
 }

@@ -113,12 +113,6 @@ if (strpos($_SERVER['PHP_SELF'], '/admin/') !== false ||
         <!-- ===== Admin only links ===== -->
         <?php if ($role === 'admin'): ?>
 
-        <!-- Pending Teachers: approve/decline teacher registrations -->
-        <a href="<?= $basePath ?>admin/pending_teachers.php" class="nav-link <?= $currentPage === 'pending_teachers.php' ? 'active' : '' ?>">
-            <span class="icon">👨‍🏫</span>
-            <span>Pending Teachers</span>
-        </a>
-
         <!-- Manage Users: view/edit all registered users -->
         <a href="<?= $basePath ?>admin/users.php" class="nav-link <?= $currentPage === 'users.php' ? 'active' : '' ?>">
             <span class="icon">👥</span>

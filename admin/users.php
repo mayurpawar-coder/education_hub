@@ -75,6 +75,212 @@ $users = $conn->query("SELECT * FROM users ORDER BY CASE WHEN status = 'pending'
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Users - Education Hub</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        /* Status badges with theme colors */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-approved {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        
+        .status-pending {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+        
+        .status-rejected {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+        
+        /* User avatar styling */
+        .user-avatar-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .user-avatar-fallback {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        /* Role dropdown styling */
+        .role-dropdown {
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            background: var(--surface-light);
+            color: var(--text);
+            border: 1px solid var(--border);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .role-dropdown:hover {
+            border-color: var(--primary);
+        }
+        
+        .role-dropdown:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        /* Action buttons styling */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-action {
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 11px;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .btn-approve {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-approve:hover {
+            background: #047857;
+            transform: translateY(-1px);
+        }
+        
+        .btn-reject {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .btn-reject:hover {
+            background: #b45309;
+            transform: translateY(-1px);
+        }
+        
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #b91c1c;
+            transform: translateY(-1px);
+        }
+        
+        .btn-call {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-call:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        
+        /* Pending teacher row highlighting */
+        .pending-teacher-row {
+            background: var(--warning-light);
+            border-left: 4px solid var(--warning);
+        }
+        
+        .pending-teacher-row:hover {
+            background: #fef3c7;
+        }
+        
+        /* Table improvements */
+        .table-container {
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            background: var(--primary-lighter);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+        
+        tr:hover {
+            background: var(--primary-lighter);
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .action-buttons {
+                flex-direction: column;
+                gap: 4px;
+            }
+            
+            .btn-action {
+                font-size: 10px;
+                padding: 4px 8px;
+            }
+            
+            .user-avatar-cell {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="layout">
@@ -90,6 +296,7 @@ $users = $conn->query("SELECT * FROM users ORDER BY CASE WHEN status = 'pending'
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">👥 All Users (<?= $users->num_rows ?>)</h3>
+                        <small style="color: var(--text-muted);">Teachers with pending approval are highlighted</small>
                     </div>
 
                     <div class="table-container">
@@ -107,25 +314,31 @@ $users = $conn->query("SELECT * FROM users ORDER BY CASE WHEN status = 'pending'
                             </thead>
                             <tbody>
                                 <?php while ($user = $users->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?= $user['id'] ?></td>
-                                    <td style="display:flex; align-items:center; gap:10px;">
-                                        <?php if (!empty($user['profile_image']) && file_exists(__DIR__ . '/../' . $user['profile_image'])): ?>
-                                            <img src="<?= '../' . $user['profile_image'] ?>" style="width:36px; height:36px; border-radius:50%; object-fit:cover;">
-                                        <?php else: ?>
-                                            <div style="width:36px; height:36px; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center; font-weight:600;"><?= substr(strtoupper($user['name']),0,2) ?></div>
-                                        <?php endif; ?>
-                                        <strong><?= htmlspecialchars($user['name']) ?></strong>
+                                <?php
+                                $isPendingTeacher = ($user['role'] ?? '') === 'teacher' && ($user['status'] ?? '') === 'pending';
+                                $rowClass = $isPendingTeacher ? 'pending-teacher-row' : '';
+                                ?>
+                                <tr class="<?= $rowClass ?>">
+                                    <td><strong><?= $user['id'] ?></strong></td>
+                                    <td>
+                                        <div class="user-avatar-cell">
+                                            <?php if (!empty($user['profile_image']) && file_exists(__DIR__ . '/../' . $user['profile_image'])): ?>
+                                                <img src="<?= '../' . $user['profile_image'] ?>" alt="Profile" class="user-avatar-img">
+                                            <?php else: ?>
+                                                <div class="user-avatar-fallback"><?= substr(strtoupper($user['name']),0,2) ?></div>
+                                            <?php endif; ?>
+                                            <div class="user-name"><?= htmlspecialchars($user['name']) ?></div>
+                                        </div>
                                     </td>
                                     <td>
-                                        <?= htmlspecialchars($user['mobile'] ?? '-') ?>
+                                        <?= !empty($user['mobile']) ? '📱 ' . htmlspecialchars($user['mobile']) : '<span style="color: var(--text-muted);">-</span>' ?>
                                     </td>
                                     <td>
                                         <!-- Inline role change form: dropdown auto-submits on change -->
                                         <form method="POST" style="display: inline;">
                                             <input type="hidden" name="user_id" value="<?= $user['id'] ?>">
                                             <select name="new_role" onchange="this.form.submit()" 
-                                                    style="padding: 6px 10px; border-radius: 6px; background: var(--surface-light); color: var(--text); border: 1px solid var(--border); font-size: 12px;"
+                                                    class="role-dropdown"
                                                     <?= $user['id'] === $_SESSION['user_id'] ? 'disabled' : '' ?>>
                                                 <option value="student" <?= $user['role'] === 'student' ? 'selected' : '' ?>>👨‍🎓 Student</option>
                                                 <option value="teacher" <?= $user['role'] === 'teacher' ? 'selected' : '' ?>>👩‍🏫 Teacher</option>
@@ -143,18 +356,20 @@ $users = $conn->query("SELECT * FROM users ORDER BY CASE WHEN status = 'pending'
                                     <td><?= formatDate($user['created_at']) ?></td>
                                     <td>
                                         <?php if ($user['id'] !== $_SESSION['user_id']): ?>
-                                        <?php if (($user['role'] ?? '') === 'teacher' && ($user['status'] ?? '') === 'pending'): ?>
-                                            <a href="?approve=<?= $user['id'] ?>" class="btn btn-sm btn-success">✅ Approve</a>
-                                            <a href="?reject=<?= $user['id'] ?>" class="btn btn-sm btn-warning">❌ Reject</a>
-                                        <?php endif; ?>
-                                        <a href="?delete=<?= $user['id'] ?>" 
-                                           onclick="return confirm('Are you sure you want to delete this user?')"
-                                           class="btn btn-sm btn-danger">🗑️ Delete</a>
-                                        <?php if (!empty($user['mobile'])): ?>
-                                            <a href="tel:<?= htmlspecialchars($user['mobile']) ?>" class="btn btn-sm" style="margin-left:6px;">📞 Call</a>
-                                        <?php endif; ?>
+                                        <div class="action-buttons">
+                                            <?php if ($isPendingTeacher): ?>
+                                                <a href="?approve=<?= $user['id'] ?>" class="btn-action btn-approve" onclick="return confirm('Approve this teacher?')">✅ Approve</a>
+                                                <a href="?reject=<?= $user['id'] ?>" class="btn-action btn-reject" onclick="return confirm('Reject this teacher?')">❌ Reject</a>
+                                            <?php endif; ?>
+                                            <a href="?delete=<?= $user['id'] ?>" 
+                                               onclick="return confirm('Are you sure you want to delete this user?')"
+                                               class="btn-action btn-delete">🗑️ Delete</a>
+                                            <?php if (!empty($user['mobile'])): ?>
+                                                <a href="tel:<?= htmlspecialchars($user['mobile']) ?>" class="btn-action btn-call">📞 Call</a>
+                                            <?php endif; ?>
+                                        </div>
                                         <?php else: ?>
-                                        <span style="color: var(--text-muted); font-size: 12px;">Current User</span>
+                                        <span style="color: var(--text-muted); font-size: 12px; font-weight: 500;">Current User</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
