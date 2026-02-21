@@ -78,8 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             /* Create directory if it doesn't exist */
             if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
 
-            /* Add timestamp prefix to filename to avoid duplicates */
-            $fileName = time() . '_' . basename($_FILES['file']['name']);
+            /* Use original filename (without timestamp prefix) */
+            $fileName = basename($_FILES['file']['name']);
             $filePath = $uploadDir . $fileName;
 
             /* Move file from PHP temp location to our uploads folder */
