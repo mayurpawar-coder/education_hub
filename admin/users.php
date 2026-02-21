@@ -40,6 +40,18 @@ if (isset($_GET['delete']) && is_numeric($_GET['delete'])) {
     }
 }
 
+/* --- Handle approve/reject actions for teacher requests --- */
+if (isset($_GET['approve']) && is_numeric($_GET['approve'])) {
+    $uid = (int)$_GET['approve'];
+    $conn->query("UPDATE users SET status = 'approved' WHERE id = $uid");
+    $success = 'User approved successfully';
+}
+if (isset($_GET['reject']) && is_numeric($_GET['reject'])) {
+    $uid = (int)$_GET['reject'];
+    $conn->query("UPDATE users SET status = 'rejected' WHERE id = $uid");
+    $success = 'User rejected successfully';
+}
+
 /* --- Handle role change via POST form --- */
 if (isset($_POST['change_role'])) {
     $userId = (int)$_POST['user_id'];
@@ -85,9 +97,10 @@ $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Name</th>
-                                    <th>Email</th>
+                                    <th>User</th>
+                                    <th>Mobile</th>
                                     <th>Role</th>
+                                    <th>Status</th>
                                     <th>Joined</th>
                                     <th>Actions</th>
                                 </tr>
@@ -96,8 +109,17 @@ $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
                                 <?php while ($user = $users->fetch_assoc()): ?>
                                 <tr>
                                     <td><?= $user['id'] ?></td>
-                                    <td><strong><?= htmlspecialchars($user['name']) ?></strong></td>
-                                    <td><?= htmlspecialchars($user['email']) ?></td>
+                                    <td style="display:flex; align-items:center; gap:10px;">
+                                        <?php if (!empty($user['profile_image']) && file_exists(__DIR__ . '/../' . $user['profile_image'])): ?>
+                                            <img src="<?= '../' . $user['profile_image'] ?>" style="width:36px; height:36px; border-radius:50%; object-fit:cover;">
+                                        <?php else: ?>
+                                            <div style="width:36px; height:36px; border-radius:50%; background:#eee; display:flex; align-items:center; justify-content:center; font-weight:600;"><?= substr(strtoupper($user['name']),0,2) ?></div>
+                                        <?php endif; ?>
+                                        <strong><?= htmlspecialchars($user['name']) ?></strong>
+                                    </td>
+                                    <td>
+                                        <?= htmlspecialchars($user['mobile'] ?? '-') ?>
+                                    </td>
                                     <td>
                                         <!-- Inline role change form: dropdown auto-submits on change -->
                                         <form method="POST" style="display: inline;">
@@ -112,12 +134,22 @@ $users = $conn->query("SELECT * FROM users ORDER BY created_at DESC");
                                             <input type="hidden" name="change_role" value="1">
                                         </form>
                                     </td>
+                                    <td>
+                                        <?= htmlspecialchars($user['status'] ?? 'approved') ?>
+                                    </td>
                                     <td><?= formatDate($user['created_at']) ?></td>
                                     <td>
                                         <?php if ($user['id'] !== $_SESSION['user_id']): ?>
+                                        <?php if (($user['role'] ?? '') === 'teacher' && ($user['status'] ?? '') === 'pending'): ?>
+                                            <a href="?approve=<?= $user['id'] ?>" class="btn btn-sm btn-success">✅ Approve</a>
+                                            <a href="?reject=<?= $user['id'] ?>" class="btn btn-sm btn-warning">❌ Reject</a>
+                                        <?php endif; ?>
                                         <a href="?delete=<?= $user['id'] ?>" 
                                            onclick="return confirm('Are you sure you want to delete this user?')"
                                            class="btn btn-sm btn-danger">🗑️ Delete</a>
+                                        <?php if (!empty($user['mobile'])): ?>
+                                            <a href="tel:<?= htmlspecialchars($user['mobile']) ?>" class="btn btn-sm" style="margin-left:6px;">📞 Call</a>
+                                        <?php endif; ?>
                                         <?php else: ?>
                                         <span style="color: var(--text-muted); font-size: 12px;">Current User</span>
                                         <?php endif; ?>

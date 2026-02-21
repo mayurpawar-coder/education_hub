@@ -96,22 +96,16 @@ if (strpos($_SERVER['PHP_SELF'], '/admin/') !== false ||
         <!-- ===== Teacher & Admin only links ===== -->
         <?php if ($role === 'teacher' || $role === 'admin'): ?>
 
-        <!-- Upload Notes: teachers upload PDF study materials -->
-        <a href="<?= $basePath ?>upload_notes.php" class="nav-link <?= $currentPage === 'upload_notes.php' ? 'active' : '' ?>">
-            <span class="icon">📤</span>
-            <span>Upload Notes</span>
+        <!-- Notes Management: single entry for notes-related actions (teachers & admins) -->
+        <a href="<?= $basePath ?>notes_management.php" class="nav-link <?= $currentPage === 'notes_management.php' ? 'active' : '' ?>">
+            <span class="icon">🗂️</span>
+            <span>Notes Management</span>
         </a>
 
         <!-- Manage Questions: add/edit quiz questions per subject -->
         <a href="<?= $basePath ?>manage_questions.php" class="nav-link <?= $currentPage === 'manage_questions.php' ? 'active' : '' ?>">
             <span class="icon">➕</span>
             <span>Manage Questions</span>
-        </a>
-
-        <!-- My Uploads: view notes the teacher has uploaded -->
-        <a href="<?= $basePath ?>my_uploads.php" class="nav-link <?= $currentPage === 'my_uploads.php' ? 'active' : '' ?>">
-            <span class="icon">📄</span>
-            <span>My Uploads</span>
         </a>
 
         <?php endif; ?>

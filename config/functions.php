@@ -30,6 +30,12 @@
 /* Include database connection - gives us $conn and $db */
 require_once __DIR__ . '/database.php';
 
+// NOTE: Database schema changes are provided as a migration SQL file:
+// See: database/20260221_add_user_fields.sql
+// Run the SQL file manually (phpMyAdmin or mysql client) to add
+// the following columns to `users`: `status`, `mobile`, `profile_image`.
+// We avoid runtime ALTERs to keep migrations explicit and auditable.
+
 /* ==================== AUTHENTICATION FUNCTIONS ==================== */
 
 /**
