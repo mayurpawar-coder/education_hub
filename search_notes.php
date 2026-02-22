@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ============================================================
  * Education Hub - Search Notes (search_notes.php)
@@ -80,7 +81,7 @@ if (isset($_GET['subject_id']) && is_numeric($_GET['subject_id'])) {
         $subjectNotes = $conn->query("
             SELECT n.*, u.name as uploader_name
             FROM notes n
-            JOIN users u ON n.uploaded_by = u.id
+            JOIN users u ON n.created_by = u.id
             WHERE n.subject_id = $subjectId
             ORDER BY n.created_at DESC
         ");
@@ -90,11 +91,11 @@ if (isset($_GET['subject_id']) && is_numeric($_GET['subject_id'])) {
     $searchSql = "SELECT n.*, s.name as subject_name, s.color as subject_color, s.year, s.semester, u.name as uploader_name
         FROM notes n
         JOIN subjects s ON n.subject_id = s.id
-        JOIN users u ON n.uploaded_by = u.id
+        JOIN users u ON n.created_by = u.id
         WHERE 1=1";
 
     // Add search conditions
-    if ($searchQuery) $searchSql .= " AND (n.title LIKE '%$searchQuery%' OR n.content LIKE '%$searchQuery%')";
+    if ($searchQuery) $searchSql .= " AND (n.title LIKE '%$searchQuery%' OR n.description LIKE '%$searchQuery%')";
     if ($subjectFilter) $searchSql .= " AND n.subject_id = $subjectFilter";
     if ($yearFilter) $searchSql .= " AND s.year = '$yearFilter'";
     if ($semesterFilter) $searchSql .= " AND s.semester = $semesterFilter";
@@ -106,6 +107,7 @@ if (isset($_GET['subject_id']) && is_numeric($_GET['subject_id'])) {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -131,11 +133,14 @@ if (isset($_GET['subject_id']) && is_numeric($_GET['subject_id'])) {
             if (urlParams.has('subject_id')) {
                 document.getElementById('subject-notes-section').style.display = 'block';
                 // Scroll to notes section
-                document.getElementById('subject-notes-section').scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('subject-notes-section').scrollIntoView({
+                    behavior: 'smooth'
+                });
             }
         });
     </script>
 </head>
+
 <body>
     <div class="layout">
         <?php include 'includes/sidebar.php'; ?>
@@ -171,18 +176,18 @@ if (isset($_GET['subject_id']) && is_numeric($_GET['subject_id'])) {
 
                     <!-- Semester Tabs (show only if year is selected) -->
                     <?php if ($yearFilter): ?>
-                    <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
-                        <?php
-                        $semesters = ['FY' => [1, 2], 'SY' => [3, 4], 'TY' => [5, 6]];
-                        $availableSems = $semesters[$yearFilter] ?? [];
-                        ?>
-                        <a href="?year=<?= $yearFilter ?><?= $subjectFilter ? '&subject=' . $subjectFilter : '' ?>" class="btn btn-sm <?= !$semesterFilter ? 'btn-primary' : 'btn-secondary' ?>">All Semesters</a>
-                        <?php foreach ($availableSems as $sem): ?>
-                        <a href="?year=<?= $yearFilter ?>&semester=<?= $sem ?><?= $subjectFilter ? '&subject=' . $subjectFilter : '' ?>" class="btn btn-sm <?= $semesterFilter == $sem ? 'btn-primary' : 'btn-secondary' ?>">
-                            Semester <?= $sem ?>
-                        </a>
-                        <?php endforeach; ?>
-                    </div>
+                        <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+                            <?php
+                            $semesters = ['FY' => [1, 2], 'SY' => [3, 4], 'TY' => [5, 6]];
+                            $availableSems = $semesters[$yearFilter] ?? [];
+                            ?>
+                            <a href="?year=<?= $yearFilter ?><?= $subjectFilter ? '&subject=' . $subjectFilter : '' ?>" class="btn btn-sm <?= !$semesterFilter ? 'btn-primary' : 'btn-secondary' ?>">All Semesters</a>
+                            <?php foreach ($availableSems as $sem): ?>
+                                <a href="?year=<?= $yearFilter ?>&semester=<?= $sem ?><?= $subjectFilter ? '&subject=' . $subjectFilter : '' ?>" class="btn btn-sm <?= $semesterFilter == $sem ? 'btn-primary' : 'btn-secondary' ?>">
+                                    Semester <?= $sem ?>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
                     <?php endif; ?>
 
                     <!-- Search Form -->
@@ -192,7 +197,7 @@ if (isset($_GET['subject_id']) && is_numeric($_GET['subject_id'])) {
                         <input type="hidden" name="semester" value="<?= $semesterFilter ?>">
 
                         <input type="text" name="search" placeholder="Search notes by title or content..."
-                               value="<?= htmlspecialchars($searchQuery) ?>" style="flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                            value="<?= htmlspecialchars($searchQuery) ?>" style="flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);">
 
                         <select name="subject" style="padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface);">
                             <option value="">All Subjects</option>
@@ -203,71 +208,71 @@ if (isset($_GET['subject_id']) && is_numeric($_GET['subject_id'])) {
                                 if ($yearFilter && $subject['year'] !== $yearFilter) continue;
                                 if ($semesterFilter && $subject['semester'] != $semesterFilter) continue;
                             ?>
-                            <option value="<?= $subject['id'] ?>" <?= $subjectFilter == $subject['id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($subject['name']) ?>
-                            </option>
+                                <option value="<?= $subject['id'] ?>" <?= $subjectFilter == $subject['id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($subject['name']) ?>
+                                </option>
                             <?php endwhile; ?>
                         </select>
 
                         <button type="submit" class="btn btn-primary">🔍 Search</button>
                         <?php if ($searchQuery || $yearFilter || $semesterFilter || $subjectFilter): ?>
-                        <a href="search_notes.php" class="btn btn-secondary">Clear Filters</a>
+                            <a href="search_notes.php" class="btn btn-secondary">Clear Filters</a>
                         <?php endif; ?>
                     </form>
                 </div>
 
                 <!-- === Search Results Section === -->
                 <?php if ($showSearchResults): ?>
-                <div class="card" style="margin-bottom: 32px;">
-                    <div class="card-header">
-                        <h3 class="card-title">🔍 Search Results</h3>
-                        <p style="color: var(--text-muted); margin: 4px 0 0 0; font-size: 14px;">
-                            <?php
-                            $resultCount = $searchResults ? $searchResults->num_rows : 0;
-                            echo $resultCount . ' note' . ($resultCount != 1 ? 's' : '') . ' found';
-                            if ($searchQuery) echo ' for "' . htmlspecialchars($searchQuery) . '"';
-                            ?>
-                        </p>
-                    </div>
+                    <div class="card" style="margin-bottom: 32px;">
+                        <div class="card-header">
+                            <h3 class="card-title">🔍 Search Results</h3>
+                            <p style="color: var(--text-muted); margin: 4px 0 0 0; font-size: 14px;">
+                                <?php
+                                $resultCount = $searchResults ? $searchResults->num_rows : 0;
+                                echo $resultCount . ' note' . ($resultCount != 1 ? 's' : '') . ' found';
+                                if ($searchQuery) echo ' for "' . htmlspecialchars($searchQuery) . '"';
+                                ?>
+                            </p>
+                        </div>
 
-                    <div style="padding: 20px;">
-                        <?php if ($searchResults && $searchResults->num_rows > 0): ?>
-                            <div style="display: grid; gap: 16px;">
-                                <?php while ($note = $searchResults->fetch_assoc()): ?>
-                                <div style="padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-light);">
-                                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-                                        <div>
-                                            <h4 style="margin: 0; color: var(--text); font-size: 16px;"><?= htmlspecialchars($note['title']) ?></h4>
-                                            <p style="margin: 4px 0 0 0; color: var(--text-muted); font-size: 12px;">
-                                                <span style="width: 12px; height: 12px; border-radius: 50%; background: <?= $note['subject_color'] ?>; display: inline-block; margin-right: 6px;"></span>
-                                                <?= htmlspecialchars($note['subject_name']) ?> •
-                                                Uploaded by <?= htmlspecialchars($note['uploader_name']) ?> •
-                                                <?= formatDate($note['created_at']) ?> •
-                                                Downloaded <?= intval($note['downloads']) ?> times
-                                            </p>
+                        <div style="padding: 20px;">
+                            <?php if ($searchResults && $searchResults->num_rows > 0): ?>
+                                <div style="display: grid; gap: 16px;">
+                                    <?php while ($note = $searchResults->fetch_assoc()): ?>
+                                        <div style="padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-light);">
+                                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                                                <div>
+                                                    <h4 style="margin: 0; color: var(--text); font-size: 16px;"><?= htmlspecialchars($note['title']) ?></h4>
+                                                    <p style="margin: 4px 0 0 0; color: var(--text-muted); font-size: 12px;">
+                                                        <span style="width: 12px; height: 12px; border-radius: 50%; background: <?= $note['subject_color'] ?>; display: inline-block; margin-right: 6px;"></span>
+                                                        <?= htmlspecialchars($note['subject_name']) ?> •
+                                                        Uploaded by <?= htmlspecialchars($note['uploader_name']) ?> •
+                                                        <?= formatDate($note['created_at']) ?> •
+                                                        Downloaded <?= intval($note['download_count']) ?> times
+                                                    </p>
+                                                </div>
+                                                <a href="download_notes.php?id=<?= $note['id'] ?>" class="btn btn-sm btn-success">
+                                                    📥 Download
+                                                </a>
+                                            </div>
+                                            <?php if (!empty($note['description'])): ?>
+                                                <div style="color: var(--text-muted); font-size: 14px; line-height: 1.5;">
+                                                    <?= nl2br(htmlspecialchars(substr($note['description'], 0, 200))) ?>
+                                                    <?php if (strlen($note['description']) > 200): ?>...<?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
-                                        <a href="download_notes.php?id=<?= $note['id'] ?>" class="btn btn-sm btn-success">
-                                            📥 Download
-                                        </a>
-                                    </div>
-                                    <?php if (!empty($note['content'])): ?>
-                                        <div style="color: var(--text-muted); font-size: 14px; line-height: 1.5;">
-                                            <?= nl2br(htmlspecialchars(substr($note['content'], 0, 200))) ?>
-                                            <?php if (strlen($note['content']) > 200): ?>...<?php endif; ?>
-                                        </div>
-                                    <?php endif; ?>
+                                    <?php endwhile; ?>
                                 </div>
-                                <?php endwhile; ?>
-                            </div>
-                        <?php else: ?>
-                            <div style="text-align: center; padding: 40px; color: var(--text-muted);">
-                                <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
-                                <h4>No notes found</h4>
-                                <p>Try adjusting your search criteria or browse subjects below.</p>
-                            </div>
-                        <?php endif; ?>
+                            <?php else: ?>
+                                <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                    <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                                    <h4>No notes found</h4>
+                                    <p>Try adjusting your search criteria or browse subjects below.</p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                </div>
                 <?php endif; ?>
 
                 <!-- === Subjects by Year & Semester === -->
@@ -279,38 +284,38 @@ if (isset($_GET['subject_id']) && is_numeric($_GET['subject_id'])) {
 
                     <!-- Year/Semester Tabs -->
                     <?php foreach ($groupedSubjects as $yearSem => $subjectsInGroup): ?>
-                    <div class="year-semester-section" style="margin-bottom: 24px;">
-                        <h4 style="color: var(--primary); font-weight: 700; margin-bottom: 16px; padding: 12px; background: var(--primary-lighter); border-radius: var(--radius-sm);">
-                            🎓 <?= htmlspecialchars($yearSem) ?>
-                        </h4>
+                        <div class="year-semester-section" style="margin-bottom: 24px;">
+                            <h4 style="color: var(--primary); font-weight: 700; margin-bottom: 16px; padding: 12px; background: var(--primary-lighter); border-radius: var(--radius-sm);">
+                                🎓 <?= htmlspecialchars($yearSem) ?>
+                            </h4>
 
-                        <div class="subjects-grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px;">
-                            <?php foreach ($subjectsInGroup as $subject): ?>
-                            <div class="subject-card" style="cursor: pointer;" onclick="showSubjectNotes(<?= $subject['id'] ?>)">
-                                <div class="subject-header">
-                                    <div class="subject-icon" style="background: <?= $subject['color'] ?>20; color: <?= $subject['color'] ?>;">
-                                        📚
+                            <div class="subjects-grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                                <?php foreach ($subjectsInGroup as $subject): ?>
+                                    <div class="subject-card" style="cursor: pointer;" onclick="showSubjectNotes(<?= $subject['id'] ?>)">
+                                        <div class="subject-header">
+                                            <div class="subject-icon" style="background: <?= $subject['color'] ?>20; color: <?= $subject['color'] ?>;">
+                                                📚
+                                            </div>
+                                            <h3 class="subject-name" style="font-size: 16px;"><?= htmlspecialchars($subject['name']) ?></h3>
+                                        </div>
+                                        <p class="subject-desc" style="font-size: 13px; margin-bottom: 8px;"><?= htmlspecialchars($subject['description']) ?></p>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                            <span style="font-size: 12px; color: var(--text-muted);">
+                                                📝 <?= $subject['note_count'] ?> note<?= $subject['note_count'] != 1 ? 's' : '' ?> available
+                                            </span>
+                                            <span style="font-size: 11px; color: var(--text-light); background: var(--surface); padding: 2px 6px; border-radius: 4px;">
+                                                <?= $subject['year'] ?> Sem <?= $subject['semester'] ?>
+                                            </span>
+                                        </div>
+                                        <div class="subject-actions">
+                                            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); showSubjectNotes(<?= $subject['id'] ?>)">
+                                                📖 View Notes
+                                            </button>
+                                        </div>
                                     </div>
-                                    <h3 class="subject-name" style="font-size: 16px;"><?= htmlspecialchars($subject['name']) ?></h3>
-                                </div>
-                                <p class="subject-desc" style="font-size: 13px; margin-bottom: 8px;"><?= htmlspecialchars($subject['description']) ?></p>
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                    <span style="font-size: 12px; color: var(--text-muted);">
-                                        📝 <?= $subject['note_count'] ?> note<?= $subject['note_count'] != 1 ? 's' : '' ?> available
-                                    </span>
-                                    <span style="font-size: 11px; color: var(--text-light); background: var(--surface); padding: 2px 6px; border-radius: 4px;">
-                                        <?= $subject['year'] ?> Sem <?= $subject['semester'] ?>
-                                    </span>
-                                </div>
-                                <div class="subject-actions">
-                                    <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); showSubjectNotes(<?= $subject['id'] ?>)">
-                                        📖 View Notes
-                                    </button>
-                                </div>
+                                <?php endforeach; ?>
                             </div>
-                            <?php endforeach; ?>
                         </div>
-                    </div>
                     <?php endforeach; ?>
                 </div>
 
@@ -326,27 +331,27 @@ if (isset($_GET['subject_id']) && is_numeric($_GET['subject_id'])) {
                         <?php if ($selectedSubject && $subjectNotes): ?>
                             <div class="notes-list" style="display: grid; gap: 16px;">
                                 <?php while ($note = $subjectNotes->fetch_assoc()): ?>
-                                <div class="note-item" style="padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-light);">
-                                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-                                        <div>
-                                            <h4 style="margin: 0; color: var(--text); font-size: 16px;"><?= htmlspecialchars($note['title']) ?></h4>
-                                            <p style="margin: 4px 0 0 0; color: var(--text-muted); font-size: 12px;">
-                                                Uploaded by <?= htmlspecialchars($note['uploader_name']) ?> •
-                                                <?= formatDate($note['created_at']) ?> •
-                                                Downloaded <?= $note['downloads'] ?> times
-                                            </p>
+                                    <div class="note-item" style="padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-light);">
+                                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                                            <div>
+                                                <h4 style="margin: 0; color: var(--text); font-size: 16px;"><?= htmlspecialchars($note['title']) ?></h4>
+                                                <p style="margin: 4px 0 0 0; color: var(--text-muted); font-size: 12px;">
+                                                    Uploaded by <?= htmlspecialchars($note['uploader_name']) ?> •
+                                                    <?= formatDate($note['created_at']) ?> •
+                                                    Downloaded <?= $note['download_count'] ?> times
+                                                </p>
+                                            </div>
+                                            <a href="download_notes.php?id=<?= $note['id'] ?>" class="btn btn-sm btn-success" style="margin-left: 12px;">
+                                                📥 Download
+                                            </a>
                                         </div>
-                                        <a href="download_notes.php?id=<?= $note['id'] ?>" class="btn btn-sm btn-success" style="margin-left: 12px;">
-                                            📥 Download
-                                        </a>
+                                        <?php if (!empty($note['description'])): ?>
+                                            <div style="color: var(--text-muted); font-size: 14px; line-height: 1.5; margin-top: 8px;">
+                                                <?= nl2br(htmlspecialchars(substr($note['description'], 0, 200))) ?>
+                                                <?php if (strlen($note['description']) > 200): ?>...<?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
-                                    <?php if (!empty($note['content'])): ?>
-                                        <div style="color: var(--text-muted); font-size: 14px; line-height: 1.5; margin-top: 8px;">
-                                            <?= nl2br(htmlspecialchars(substr($note['content'], 0, 200))) ?>
-                                            <?php if (strlen($note['content']) > 200): ?>...<?php endif; ?>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
                                 <?php endwhile; ?>
                             </div>
                         <?php elseif ($selectedSubject): ?>
@@ -362,4 +367,5 @@ if (isset($_GET['subject_id']) && is_numeric($_GET['subject_id'])) {
         </main>
     </div>
 </body>
+
 </html>

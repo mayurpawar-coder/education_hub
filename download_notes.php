@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ============================================================
  * Education Hub - Download Note Handler (download_notes.php)
@@ -47,16 +48,16 @@ if (!$note) {
 }
 
 /* Increment download counter */
-$conn->query("UPDATE notes SET downloads = downloads + 1 WHERE id = $noteId");
+$conn->query("UPDATE notes SET download_count = download_count + 1 WHERE id = $noteId");
 
 /* Serve the file for download */
-if ($note['file_path'] && file_exists($note['file_path'])) {
-    /* Physical file exists → serve it directly */
-    $filePath = $note['file_path'];
-    $fileName = basename($filePath);
+$uploadDir = __DIR__ . '/uploads/notes/';
+$filePath = $uploadDir . $note['file_name'];
 
+if (!empty($note['file_name']) && file_exists($filePath)) {
+    /* Physical file exists → serve it directly */
     header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="' . $fileName . '"');
+    header('Content-Disposition: attachment; filename="' . basename($note['original_name']) . '"');
     header('Content-Length: ' . filesize($filePath));
 
     readfile($filePath); // Output file contents
@@ -68,7 +69,6 @@ if ($note['file_path'] && file_exists($note['file_path'])) {
 
     echo "Title: " . $note['title'] . "\n";
     echo "================================\n\n";
-    echo $note['content'];
+    echo $note['description'];
     exit();
 }
-?>

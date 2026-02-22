@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ============================================================
  * Education Hub - Entry Point (index.php)
@@ -26,11 +27,13 @@ if (isLoggedIn()) {
     /* Admin goes to admin dashboard, others go to student/teacher dashboard */
     if (isAdmin()) {
         redirect('admin/dashboard.php');
-    } else {
+    } else if (isTeacher()) {
         redirect('dashboard.php');
+    } else {
+        /* Students land on the Assessments (Quiz) page by default */
+        redirect('quiz.php');
     }
 } else {
     /* Not logged in → send to login page */
     redirect('auth/login.php');
 }
-?>

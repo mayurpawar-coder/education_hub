@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ============================================================
  * Education Hub - Sidebar Navigation (includes/sidebar.php)
@@ -42,9 +43,11 @@ $role = $_SESSION['user_role'] ?? 'student';
 
 /* Calculate base path: pages in admin/ or auth/ need '../' prefix */
 $basePath = '';
-if (strpos($_SERVER['PHP_SELF'], '/admin/') !== false ||
+if (
+    strpos($_SERVER['PHP_SELF'], '/admin/') !== false ||
     strpos($_SERVER['PHP_SELF'], '/auth/') !== false ||
-    strpos($_SERVER['PHP_SELF'], '/includes/') !== false) {
+    strpos($_SERVER['PHP_SELF'], '/includes/') !== false
+) {
     $basePath = '../';
 }
 ?>
@@ -66,9 +69,14 @@ if (strpos($_SERVER['PHP_SELF'], '/admin/') !== false ||
     <nav class="sidebar-nav">
 
         <!-- Dashboard link (all roles) -->
-        <!-- Admin goes to admin/dashboard.php, others go to dashboard.php -->
-        <a href="<?= $role === 'admin' ? $basePath . 'admin/dashboard.php' : $basePath . 'dashboard.php' ?>"
-           class="nav-link <?= $currentPage === 'dashboard.php' ? 'active' : '' ?>">
+        <!-- Admin goes to admin/dashboard.php, Teacher goes to dashboard.php, Student goes to quiz.php -->
+        <?php
+        $dashboardUrl = $basePath . 'quiz.php';
+        if ($role === 'admin') $dashboardUrl = $basePath . 'admin/dashboard.php';
+        if ($role === 'teacher') $dashboardUrl = $basePath . 'dashboard.php';
+        ?>
+        <a href="<?= $dashboardUrl ?>"
+            class="nav-link <?= ($currentPage === 'dashboard.php' || ($currentPage === 'quiz.php' && $role === 'student')) ? 'active' : '' ?>">
             <span class="icon">🏠</span>
             <span>Dashboard</span>
         </a>
@@ -88,7 +96,7 @@ if (strpos($_SERVER['PHP_SELF'], '/admin/') !== false ||
         <!-- Performance link: different destination based on role -->
         <!-- Students → own performance, Teachers/Admins → all students -->
         <a href="<?= ($role === 'teacher' || $role === 'admin') ? $basePath . 'teacher_performance.php' : $basePath . 'performance.php' ?>"
-           class="nav-link <?= ($currentPage === 'performance.php' || $currentPage === 'teacher_performance.php') ? 'active' : '' ?>">
+            class="nav-link <?= ($currentPage === 'performance.php' || $currentPage === 'teacher_performance.php') ? 'active' : '' ?>">
             <span class="icon">📊</span>
             <span><?= ($role === 'teacher' || $role === 'admin') ? 'Student Performance' : 'My Performance' ?></span>
         </a>
@@ -96,34 +104,34 @@ if (strpos($_SERVER['PHP_SELF'], '/admin/') !== false ||
         <!-- ===== Teacher & Admin only links ===== -->
         <?php if ($role === 'teacher' || $role === 'admin'): ?>
 
-        <!-- Notes Management: single entry for notes-related actions (teachers & admins) -->
-        <a href="<?= $basePath ?>notes_management.php" class="nav-link <?= $currentPage === 'notes_management.php' ? 'active' : '' ?>">
-            <span class="icon">🗂️</span>
-            <span>Notes Management</span>
-        </a>
+            <!-- Notes Management: single entry for notes-related actions (teachers & admins) -->
+            <a href="<?= $basePath ?>notes_management.php" class="nav-link <?= $currentPage === 'notes_management.php' ? 'active' : '' ?>">
+                <span class="icon">🗂️</span>
+                <span>Notes Management</span>
+            </a>
 
-        <!-- Manage Questions: add/edit quiz questions per subject -->
-        <a href="<?= $basePath ?>manage_questions.php" class="nav-link <?= $currentPage === 'manage_questions.php' ? 'active' : '' ?>">
-            <span class="icon">➕</span>
-            <span>Manage Questions</span>
-        </a>
+            <!-- Manage Questions: add/edit quiz questions per subject -->
+            <a href="<?= $basePath ?>manage_questions.php" class="nav-link <?= $currentPage === 'manage_questions.php' ? 'active' : '' ?>">
+                <span class="icon">➕</span>
+                <span>Manage Questions</span>
+            </a>
 
         <?php endif; ?>
 
         <!-- ===== Admin only links ===== -->
         <?php if ($role === 'admin'): ?>
 
-        <!-- Manage Users: view/edit all registered users -->
-        <a href="<?= $basePath ?>admin/users.php" class="nav-link <?= $currentPage === 'users.php' ? 'active' : '' ?>">
-            <span class="icon">👥</span>
-            <span>Manage Users</span>
-        </a>
+            <!-- Manage Users: view/edit all registered users -->
+            <a href="<?= $basePath ?>admin/users.php" class="nav-link <?= $currentPage === 'users.php' ? 'active' : '' ?>">
+                <span class="icon">👥</span>
+                <span>Manage Users</span>
+            </a>
 
-        <!-- Manage Subjects: add/edit subjects by year/semester -->
-        <a href="<?= $basePath ?>admin/subjects.php" class="nav-link <?= $currentPage === 'subjects.php' ? 'active' : '' ?>">
-            <span class="icon">📚</span>
-            <span>Manage Subjects</span>
-        </a>
+            <!-- Manage Subjects: add/edit subjects by year/semester -->
+            <a href="<?= $basePath ?>admin/subjects.php" class="nav-link <?= $currentPage === 'subjects.php' ? 'active' : '' ?>">
+                <span class="icon">📚</span>
+                <span>Manage Subjects</span>
+            </a>
 
         <?php endif; ?>
     </nav>

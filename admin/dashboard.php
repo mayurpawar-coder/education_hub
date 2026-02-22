@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ============================================================
  * Education Hub - Admin Dashboard (admin/dashboard.php)
@@ -35,7 +36,7 @@ $totalPendingTeachers = $conn->query("SELECT COUNT(*) as c FROM users WHERE role
 $totalSubjects = $conn->query("SELECT COUNT(*) as c FROM subjects")->fetch_assoc()['c'];
 $totalNotes = $conn->query("SELECT COUNT(*) as c FROM notes")->fetch_assoc()['c'];
 $totalQuestions = $conn->query("SELECT COUNT(*) as c FROM questions")->fetch_assoc()['c'];
-$totalQuizzes = $conn->query("SELECT COUNT(*) as c FROM quiz_results")->fetch_assoc()['c'];
+$totalQuizzes = $conn->query("SELECT COUNT(*) as c FROM quiz_sessions WHERE status = 'completed'")->fetch_assoc()['c'];
 
 /* Recent users (last 5 registered) */
 $recentUsers = $conn->query("SELECT * FROM users ORDER BY created_at DESC LIMIT 5");
@@ -44,7 +45,7 @@ $recentUsers = $conn->query("SELECT * FROM users ORDER BY created_at DESC LIMIT 
 $allNotes = $conn->query("
     SELECT n.*, u.name as uploader_name, s.name as subject_name, s.color as subject_color
     FROM notes n
-    JOIN users u ON n.uploaded_by = u.id
+    JOIN users u ON n.created_by = u.id
     JOIN subjects s ON n.subject_id = s.id
     ORDER BY n.created_at DESC
     LIMIT 10
@@ -62,12 +63,14 @@ $allQuestions = $conn->query("
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Education Hub</title>
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
+
 <body>
     <div class="layout">
         <?php include '../includes/sidebar.php'; ?>
@@ -93,7 +96,7 @@ $allQuestions = $conn->query("
                         <div class="stat-value"><?= $totalApprovedTeachers ?>/<?= $totalTeachers ?></div>
                         <div class="stat-label">Approved Teachers</div>
                         <?php if ($totalPendingTeachers > 0): ?>
-                        <div style="font-size: 11px; color: var(--warning); margin-top: 4px;">⏳ <?= $totalPendingTeachers ?> pending approval</div>
+                            <div style="font-size: 11px; color: var(--warning); margin-top: 4px;">⏳ <?= $totalPendingTeachers ?> pending approval</div>
                         <?php endif; ?>
                     </div>
                     <div class="stat-card warning">
@@ -154,16 +157,16 @@ $allQuestions = $conn->query("
                             </thead>
                             <tbody>
                                 <?php while ($user = $recentUsers->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($user['name']) ?></td>
-                                    <td><?= htmlspecialchars($user['email']) ?></td>
-                                    <td>
-                                        <span style="text-transform: capitalize; color: <?= $user['role'] === 'admin' ? 'var(--danger)' : ($user['role'] === 'teacher' ? 'var(--success)' : 'var(--primary)') ?>; font-weight: 600;">
-                                            <?= $user['role'] ?>
-                                        </span>
-                                    </td>
-                                    <td><?= formatDate($user['created_at']) ?></td>
-                                </tr>
+                                    <tr>
+                                        <td><?= htmlspecialchars($user['name']) ?></td>
+                                        <td><?= htmlspecialchars($user['email']) ?></td>
+                                        <td>
+                                            <span style="text-transform: capitalize; color: <?= $user['role'] === 'admin' ? 'var(--danger)' : ($user['role'] === 'teacher' ? 'var(--success)' : 'var(--primary)') ?>; font-weight: 600;">
+                                                <?= $user['role'] ?>
+                                            </span>
+                                        </td>
+                                        <td><?= formatDate($user['created_at']) ?></td>
+                                    </tr>
                                 <?php endwhile; ?>
                             </tbody>
                         </table>
@@ -176,36 +179,36 @@ $allQuestions = $conn->query("
                         <h3 class="card-title">📝 All Uploaded Notes</h3>
                     </div>
                     <?php if ($allNotes->num_rows > 0): ?>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Subject</th>
-                                    <th>Uploaded By</th>
-                                    <th>Downloads</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while ($note = $allNotes->fetch_assoc()): ?>
-                                <tr>
-                                    <td><strong><?= htmlspecialchars($note['title']) ?></strong></td>
-                                    <td>
-                                        <span style="background: <?= $note['subject_color'] ?>20; color: <?= $note['subject_color'] ?>; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
-                                            <?= htmlspecialchars($note['subject_name']) ?>
-                                        </span>
-                                    </td>
-                                    <td><?= htmlspecialchars($note['uploader_name']) ?></td>
-                                    <td><strong>⬇️ <?= $note['downloads'] ?></strong></td>
-                                    <td><?= formatDate($note['created_at']) ?></td>
-                                </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Subject</th>
+                                        <th>Uploaded By</th>
+                                        <th>Downloads</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php while ($note = $allNotes->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><strong><?= htmlspecialchars($note['title']) ?></strong></td>
+                                            <td>
+                                                <span style="background: <?= $note['subject_color'] ?>20; color: <?= $note['subject_color'] ?>; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                                                    <?= htmlspecialchars($note['subject_name']) ?>
+                                                </span>
+                                            </td>
+                                            <td><?= htmlspecialchars($note['uploader_name']) ?></td>
+                                            <td><strong>⬇️ <?= $note['download_count'] ?></strong></td>
+                                            <td><?= formatDate($note['created_at']) ?></td>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     <?php else: ?>
-                    <p style="text-align: center; color: var(--text-muted); padding: 24px;">No notes uploaded yet.</p>
+                        <p style="text-align: center; color: var(--text-muted); padding: 24px;">No notes uploaded yet.</p>
                     <?php endif; ?>
                 </div>
 
@@ -215,36 +218,37 @@ $allQuestions = $conn->query("
                         <h3 class="card-title">❓ All Quiz Questions</h3>
                     </div>
                     <?php if ($allQuestions->num_rows > 0): ?>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Question</th>
-                                    <th>Subject</th>
-                                    <th>Created By</th>
-                                    <th>Correct</th>
-                                    <th>Difficulty</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while ($q = $allQuestions->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars(substr($q['question_text'], 0, 60)) ?>...</td>
-                                    <td><?= htmlspecialchars($q['subject_name']) ?></td>
-                                    <td><?= htmlspecialchars($q['creator_name']) ?></td>
-                                    <td><strong style="color: var(--success);"><?= $q['correct_answer'] ?></strong></td>
-                                    <td style="text-transform: capitalize;"><?= $q['difficulty'] ?></td>
-                                </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Question</th>
+                                        <th>Subject</th>
+                                        <th>Created By</th>
+                                        <th>Correct</th>
+                                        <th>Difficulty</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php while ($q = $allQuestions->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars(substr($q['question_text'], 0, 60)) ?>...</td>
+                                            <td><?= htmlspecialchars($q['subject_name']) ?></td>
+                                            <td><?= htmlspecialchars($q['creator_name']) ?></td>
+                                            <td><strong style="color: var(--success);"><?= $q['correct_answer'] ?></strong></td>
+                                            <td style="text-transform: capitalize;"><?= $q['difficulty'] ?></td>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     <?php else: ?>
-                    <p style="text-align: center; color: var(--text-muted); padding: 24px;">No questions added yet.</p>
+                        <p style="text-align: center; color: var(--text-muted); padding: 24px;">No questions added yet.</p>
                     <?php endif; ?>
                 </div>
             </section>
         </main>
     </div>
 </body>
+
 </html>

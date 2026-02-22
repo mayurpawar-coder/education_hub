@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ============================================================
  * Education Hub - Helper Functions (functions.php)
@@ -27,6 +28,9 @@
  * ============================================================
  */
 
+// Global Constants
+const PASS_PERCENTAGE = 40;
+
 /* Include database connection - gives us $conn and $db */
 require_once __DIR__ . '/database.php';
 
@@ -44,7 +48,8 @@ require_once __DIR__ . '/database.php';
  * LOGIC: Returns true if 'user_id' exists in the PHP session.
  * The user_id is set in login.php after successful password verification.
  */
-function isLoggedIn() {
+function isLoggedIn()
+{
     return isset($_SESSION['user_id']);
 }
 
@@ -55,23 +60,27 @@ function isLoggedIn() {
  * LOGIC: Compares the session's user_role with the given role string.
  * Returns false if user is not logged in.
  */
-function hasRole($role) {
+function hasRole($role)
+{
     if (!isLoggedIn()) return false;
     return $_SESSION['user_role'] === $role;
 }
 
 /** Shortcut: Check if current user is admin */
-function isAdmin() {
+function isAdmin()
+{
     return hasRole('admin');
 }
 
 /** Shortcut: Check if current user is teacher */
-function isTeacher() {
+function isTeacher()
+{
     return hasRole('teacher');
 }
 
 /** Shortcut: Check if current user is student */
-function isStudent() {
+function isStudent()
+{
     return hasRole('student');
 }
 
@@ -89,11 +98,14 @@ function isStudent() {
  *   From admin/dashboard.php → returns '../'
  *   From dashboard.php → returns ''
  */
-function getBasePath() {
+function getBasePath()
+{
     $scriptPath = $_SERVER['PHP_SELF'];
-    if (strpos($scriptPath, '/admin/') !== false || 
+    if (
+        strpos($scriptPath, '/admin/') !== false ||
         strpos($scriptPath, '/auth/') !== false ||
-        strpos($scriptPath, '/includes/') !== false) {
+        strpos($scriptPath, '/includes/') !== false
+    ) {
         return '../';
     }
     return '';
@@ -105,7 +117,8 @@ function getBasePath() {
  * LOGIC: Sends HTTP Location header and stops script execution.
  * Always call exit() after header() to prevent code below from running.
  */
-function redirect($url) {
+function redirect($url)
+{
     header("Location: $url");
     exit();
 }
@@ -118,7 +131,8 @@ function redirect($url) {
  * USAGE: Call at the top of any page that requires login.
  * LOGIC: If not logged in, redirects to auth/login.php
  */
-function requireLogin() {
+function requireLogin()
+{
     if (!isLoggedIn()) {
         $basePath = getBasePath();
         redirect($basePath . 'auth/login.php');
@@ -131,11 +145,16 @@ function requireLogin() {
  * LOGIC: First checks login, then checks if role is 'admin'.
  * Non-admin users are redirected to dashboard with error message.
  */
-function requireAdmin() {
+function requireAdmin()
+{
     requireLogin();
     if (!isAdmin()) {
         $basePath = getBasePath();
-        redirect($basePath . 'dashboard.php?error=unauthorized');
+        if (isTeacher()) {
+            redirect($basePath . 'dashboard.php?error=unauthorized');
+        } else {
+            redirect($basePath . 'quiz.php?error=unauthorized');
+        }
     }
 }
 
@@ -145,11 +164,13 @@ function requireAdmin() {
  * LOGIC: Allows both teachers and admins to access.
  * Students are redirected to dashboard with error message.
  */
-function requireTeacher() {
+function requireTeacher()
+{
     requireLogin();
     if (!isTeacher() && !isAdmin()) {
         $basePath = getBasePath();
-        redirect($basePath . 'dashboard.php?error=unauthorized');
+        // Redirect students to the quiz page if they try to access teacher-only pages
+        redirect($basePath . 'quiz.php?error=unauthorized');
     }
 }
 
@@ -166,7 +187,8 @@ function requireTeacher() {
  * 
  * USAGE: sanitize($_POST['name']) before using in queries or display
  */
-function sanitize($input) {
+function sanitize($input)
+{
     global $conn;
     return htmlspecialchars(strip_tags(trim($conn->real_escape_string($input))));
 }
@@ -183,7 +205,8 @@ function sanitize($input) {
  * RETURNS: HTML string for the alert div
  * USAGE: <?= showAlert('Saved!', 'success') ?>
  */
-function showAlert($message, $type = 'info') {
+function showAlert($message, $type = 'info')
+{
     $bgColor = [
         'success' => '#10b981',
         'error' => '#ef4444',
@@ -202,7 +225,8 @@ function showAlert($message, $type = 'info') {
  * LOGIC: Uses the session's user_id to query the users table.
  * RETURNS: Associative array with all user fields, or null if not logged in.
  */
-function getCurrentUser() {
+function getCurrentUser()
+{
     if (!isLoggedIn()) return null;
     global $conn;
     $userId = $_SESSION['user_id'];
@@ -216,7 +240,8 @@ function getCurrentUser() {
  * INPUT:  '2025-12-28 14:30:00'
  * OUTPUT: 'Dec 28, 2025'
  */
-function formatDate($date) {
+function formatDate($date)
+{
     return date('M d, Y', strtotime($date));
 }
 
@@ -236,7 +261,8 @@ function formatDate($date) {
  *      For students: counts total available notes
  *   4. Counts distinct subjects in quiz_results
  */
-function getUserStats($userId) {
+function getUserStats($userId)
+{
     global $conn;
 
     $stats = [
@@ -247,7 +273,7 @@ function getUserStats($userId) {
     ];
 
     /* Count quizzes taken and calculate average score */
-    $result = $conn->query("SELECT COUNT(*) as count, AVG(percentage) as avg FROM quiz_results WHERE user_id = $userId");
+    $result = $conn->query("SELECT COUNT(*) as count, AVG(score) as avg FROM quiz_sessions WHERE student_id = $userId AND status='completed'");
     $row = $result->fetch_assoc();
     $stats['total_quizzes'] = $row['count'];
     $stats['avg_score'] = round($row['avg'] ?? 0, 1);
@@ -255,16 +281,15 @@ function getUserStats($userId) {
     /* Count notes: uploaded (for teachers) or available (for students) */
     $role = $_SESSION['user_role'];
     if ($role === 'teacher' || $role === 'admin') {
-        $result = $conn->query("SELECT COUNT(*) as count FROM notes WHERE uploaded_by = $userId");
+        $result = $conn->query("SELECT COUNT(*) as count FROM notes WHERE created_by = $userId AND is_deleted = 0");
     } else {
-        $result = $conn->query("SELECT COUNT(*) as count FROM notes");
+        $result = $conn->query("SELECT COUNT(*) as count FROM notes WHERE is_deleted = 0");
     }
     $stats['total_notes'] = $result->fetch_assoc()['count'];
 
     /* Count unique subjects studied through quizzes */
-    $result = $conn->query("SELECT COUNT(DISTINCT subject_id) as count FROM quiz_results WHERE user_id = $userId");
+    $result = $conn->query("SELECT COUNT(DISTINCT subject_id) as count FROM quiz_sessions WHERE student_id = $userId AND status='completed'");
     $stats['subjects_studied'] = $result->fetch_assoc()['count'];
 
     return $stats;
 }
-?>

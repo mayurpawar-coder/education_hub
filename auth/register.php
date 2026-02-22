@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ============================================================
  * Education Hub - Registration Page (auth/register.php)
@@ -71,20 +72,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->get_result()->num_rows > 0) {
             $error = 'Email already registered';
         } else {
-                /* Hash password with bcrypt (secure one-way hash) */
-                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            /* Hash password with bcrypt (secure one-way hash) */
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-                /* Determine initial status: teachers require admin approval, students are approved */
-                $status = $role === 'teacher' ? 'pending' : 'approved';
+            /* Determine initial status: teachers require admin approval, students are approved */
+            $status = $role === 'teacher' ? 'pending' : 'approved';
 
-                /* Insert new user into database (include mobile, status)
+            /* Insert new user into database (include mobile, status)
                    Make sure the migration has been applied to add these columns */
-                $stmt = $conn->prepare("INSERT INTO users (name, email, password, role, status, mobile) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("ssssss", $name, $email, $hashedPassword, $role, $status, $mobile);
+            $stmt = $conn->prepare("INSERT INTO users (name, email, password, role, status, mobile) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("ssssss", $name, $email, $hashedPassword, $role, $status, $mobile);
 
             if ($stmt->execute()) {
                 if ($role === 'teacher') {
-                    $success = 'Registration successful! Your teacher account is pending admin approval. You will be notified once approved. Redirecting to login...';
+                    $success = 'Registration successful! Your teacher account is pending admin approval. Please wait for approval. Redirecting to login...';
                 } else {
                     $success = 'Registration successful! Redirecting to login...';
                 }
@@ -100,12 +101,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Education Hub</title>
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
+
 <body class="auth-page">
     <div class="auth-container">
         <div class="auth-card">
@@ -132,22 +135,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label for="name">👤 Full Name</label>
                     <input type="text" id="name" name="name" placeholder="Enter your full name" required
-                           value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">
+                        value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">
                 </div>
 
                 <!-- Email -->
                 <div class="form-group">
                     <label for="email">📧 Email Address</label>
                     <input type="email" id="email" name="email" placeholder="you@example.com" required
-                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
+                        value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                 </div>
 
                 <!-- Mobile -->
                 <div class="form-group">
                     <label for="mobile">📱 Mobile Number</label>
                     <input type="text" id="mobile" name="mobile" placeholder="e.g. 9876543210"
-                           pattern="\d{10}" maxlength="10" title="Please enter exactly 10 digits"
-                           value="<?= htmlspecialchars($_POST['mobile'] ?? '') ?>">
+                        pattern="\d{10}" maxlength="10" title="Please enter exactly 10 digits"
+                        value="<?= htmlspecialchars($_POST['mobile'] ?? '') ?>">
                     <small style="color: var(--text-muted); font-size: 12px;">Enter 10-digit mobile number</small>
                 </div>
 
@@ -182,4 +185,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </body>
+
 </html>

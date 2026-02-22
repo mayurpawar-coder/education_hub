@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ============================================================
  * Education Hub - Login Page (auth/login.php)
@@ -57,8 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             /* Verify entered password against stored bcrypt hash */
             if (password_verify($password, $user['password'])) {
                 /* Check if teacher is approved */
-                if ($user['role'] === 'teacher' && $user['status'] !== 'approved') {
-                    $error = 'Your teacher account is pending approval. Please wait for admin to review your registration.';
+                if ($user['role'] === 'teacher' && ($user['status'] ?? '') === 'pending') {
+                    $error = 'Your teacher account is pending admin approval. Please wait for approval.';
                 } else {
                     /* SUCCESS: Set session variables for authentication */
                     $_SESSION['user_id'] = $user['id'];
@@ -85,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -92,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Main stylesheet contains auth-page and auth-card styles -->
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
+
 <body class="auth-page">
     <!-- Centered login container -->
     <div class="auth-container">
@@ -116,14 +119,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label for="email">📧 Email Address</label>
                     <input type="email" id="email" name="email" placeholder="you@example.com" required
-                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
+                        value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                 </div>
 
                 <!-- Password input field -->
                 <div class="form-group">
                     <label for="password">🔒 Password</label>
                     <input type="password" id="password" name="password" placeholder="Enter your password" required
-                           value="">
+                        value="">
                 </div>
 
                 <!-- Submit button with gradient background -->
@@ -136,8 +139,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <!-- Demo credentials for testing all 3 roles -->
-           
+
         </div>
     </div>
 </body>
+
 </html>

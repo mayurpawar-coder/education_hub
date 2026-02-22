@@ -1,170 +1,398 @@
 <?php
+
 /**
  * ============================================================
- * Education Hub - Student Performance (performance.php)
- * ============================================================
- * 
- * PURPOSE:
- *   Shows the logged-in STUDENT their personal quiz performance.
- *   Includes stats cards, subject-wise progress bars, and quiz history.
- * 
- * HOW IT WORKS:
- *   1. getUserStats() gets total quizzes, avg score, subjects studied
- *   2. Queries quiz_results for this user's history (last 20)
- *   3. Groups results by subject for subject-wise progress bars
- *   4. Displays color-coded status badges per quiz attempt
- * 
- * SECTIONS:
- *   - Stats Overview: 3 cards (Total Quizzes, Accuracy, Subjects)
- *   - Performance by Subject: horizontal progress bars with avg %
- *   - Quiz History: table with date, subject, score, status
- * 
- * STATUS BADGES (same as teacher_performance.php):
- *   >= 80% → ✓ Excellent (green)
- *   >= 60% → Good (blue)  
- *   >= 40% → Average (orange)
- *   < 40%  → Needs Work (red)
- * 
- * CSS: assets/css/style.css (stats-grid, stat-card, card, table)
+ * Education Hub - Advanced Production-Ready Performance Dashboard
  * ============================================================
  */
 
 require_once 'config/functions.php';
 requireLogin();
 
-$pageTitle = 'My Performance';
 $userId = $_SESSION['user_id'];
-$stats = getUserStats($userId);
+$pageTitle = 'My Academic Performance';
 
-/* Query quiz history: last 20 attempts with subject name/color */
-$history = $conn->query("
-    SELECT qr.*, s.name as subject_name, s.color as subject_color 
-    FROM quiz_results qr 
-    JOIN subjects s ON qr.subject_id = s.id 
-    WHERE qr.user_id = $userId 
-    ORDER BY qr.taken_at DESC 
-    LIMIT 20
-");
+// 1. PERFORMANCE SUMMARY SECTION
+$summarySql = "
+    SELECT 
+        COUNT(*) as total_quizzes,
+        IFNULL(AVG(score), 0) as avg_score,
+        IFNULL(MAX(score), 0) as max_score,
+        IFNULL(MIN(score), 100) as min_score,
+        IFNULL(SUM(time_taken), 0) as total_time
+    FROM quiz_sessions 
+    WHERE student_id = $userId AND status = 'completed'";
+$summary = $conn->query($summarySql)->fetch_assoc();
 
-/* Query subject-wise performance: avg score per subject */
-$subjectPerformance = $conn->query("
-    SELECT s.name, s.color, AVG(qr.percentage) as avg_score, COUNT(*) as attempts
-    FROM quiz_results qr 
-    JOIN subjects s ON qr.subject_id = s.id 
-    WHERE qr.user_id = $userId 
-    GROUP BY qr.subject_id 
-    ORDER BY avg_score DESC
-");
+// Improvement Calculation (Last 5 vs Previous 5)
+$last5Sql = "SELECT score FROM quiz_sessions WHERE student_id = $userId AND status = 'completed' ORDER BY completed_at DESC LIMIT 5";
+$prev5Sql = "SELECT score FROM quiz_sessions WHERE student_id = $userId AND status = 'completed' ORDER BY completed_at DESC LIMIT 5 OFFSET 5";
+
+function calculateAvg($result)
+{
+    if (!$result) return 0;
+    $sum = 0;
+    $count = 0;
+    while ($r = $result->fetch_assoc()) {
+        $sum += $r['score'];
+        $count++;
+    }
+    return $count > 0 ? $sum / $count : 0;
+}
+
+$last5Avg = calculateAvg($conn->query($last5Sql));
+$prev5Avg = calculateAvg($conn->query($prev5Sql));
+$improvement = $prev5Avg > 0 ? (($last5Avg - $prev5Avg) / $prev5Avg) * 100 : ($last5Avg > 0 ? 100 : 0);
+
+// 2. TREND DATA (Line Chart)
+$trendSql = "
+    SELECT DATE_FORMAT(completed_at, '%b %d') as label, score 
+    FROM quiz_sessions 
+    WHERE student_id = $userId AND status = 'completed' 
+    ORDER BY completed_at ASC 
+    LIMIT 20";
+$trendRes = $conn->query($trendSql);
+$trendData = [];
+while ($r = $trendRes->fetch_assoc()) $trendData[] = $r;
+
+// 3. SUBJECT-WISE BREAKDOWN (Bar Chart & Table)
+$subjectAnalysisSql = "
+    SELECT 
+        s.name as subject_name, 
+        s.color,
+        s.year,
+        s.semester,
+        COUNT(qs.id) as attempts,
+        AVG(qs.score) as avg_score
+    FROM subjects s
+    JOIN quiz_sessions qs ON s.id = qs.subject_id
+    WHERE qs.student_id = $userId AND qs.status = 'completed'
+    GROUP BY s.id
+    ORDER BY avg_score DESC";
+$subjectRes = $conn->query($subjectAnalysisSql);
+$subjectData = [];
+while ($r = $subjectRes->fetch_assoc()) $subjectData[] = $r;
+
+// 4. HEATMAP DATA (Last 6 Months)
+$heatmapSql = "
+    SELECT DATE(completed_at) as date, COUNT(*) as count 
+    FROM quiz_sessions 
+    WHERE student_id = $userId AND completed_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+    GROUP BY DATE(completed_at)";
+$heatmapRes = $conn->query($heatmapSql);
+$heatmapData = [];
+while ($r = $heatmapRes->fetch_assoc()) $heatmapData[$r['date']] = $r['count'];
+
+// 5. GAMIFICATION & BADGES
+$badges = [
+    'first_quiz' => ['icon' => '🏅', 'label' => 'First Blood', 'desc' => 'Completed your first quiz', 'earned' => $summary['total_quizzes'] >= 1],
+    'quiz_5' => ['icon' => '🔥', 'label' => 'Dedicated', 'desc' => '5 quizzes completed', 'earned' => $summary['total_quizzes'] >= 5],
+    'accuracy_80' => ['icon' => '🎯', 'label' => 'Sharpshooter', 'desc' => 'Achieved >80% accuracy', 'earned' => $summary['max_score'] >= 80],
+    'streak_10' => ['icon' => '💎', 'label' => 'Legendary', 'desc' => '10 quizzes completed', 'earned' => $summary['total_quizzes'] >= 10],
+];
+
+// Streak Count
+$streakSql = "
+    SELECT COUNT(DISTINCT DATE(completed_at)) as streak 
+    FROM quiz_sessions 
+    WHERE student_id = $userId AND completed_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)";
+$streak = $conn->query($streakSql)->fetch_assoc()['streak'];
+
+// 6. RANK & COMPARISON
+$rankSql = "
+    SELECT student_id, AVG(score) as overall_avg 
+    FROM quiz_sessions 
+    WHERE status = 'completed'
+    GROUP BY student_id 
+    ORDER BY overall_avg DESC";
+$rankRes = $conn->query($rankSql);
+$rank = 0;
+$totalStudents = 0;
+while ($r = $rankRes->fetch_assoc()) {
+    $totalStudents++;
+    if ($r['student_id'] == $userId) $rank = $totalStudents;
+}
+$percentile = $totalStudents > 0 ? round((($totalStudents - $rank) / $totalStudents) * 100, 1) : 0;
+
+// 7. WEAK AREA DETECTION
+$weakSubject = null;
+if (!empty($subjectData)) {
+    $weakSubject = end($subjectData); // Last after DESC sort
+}
+
+// 8. INSIGHTS GENERATION
+$insights = [];
+if ($improvement > 5) $insights[] = "🚀 You are improving steadily! Your score increased by " . round($improvement) . "% recently.";
+if ($summary['avg_score'] < 50) $insights[] = "⚠️ Your average is below 50%. Focus on revision and basic concepts.";
+if ($weakSubject) $insights[] = "💡 Practice more in " . $weakSubject['subject_name'] . " (Avg: " . round($weakSubject['avg_score']) . "%).";
+if ($summary['total_quizzes'] < 3) $insights[] = "👋 Welcome aboard! Take more quizzes to unlock insights.";
+
+// 9. PAGINATED HISTORY
+$page = (int)($_GET['p'] ?? 1);
+$limit = 10;
+$offset = ($page - 1) * $limit;
+
+$historySql = "
+    SELECT qs.*, s.name as subject_name, s.color as subject_color 
+    FROM quiz_sessions qs 
+    JOIN subjects s ON qs.subject_id = s.id 
+    WHERE qs.student_id = $userId AND qs.status = 'completed'
+    ORDER BY qs.completed_at DESC 
+    LIMIT $limit OFFSET $offset";
+$history = $conn->query($historySql);
+
+$totalHistory = $conn->query("SELECT COUNT(*) as c FROM quiz_sessions WHERE student_id = $userId AND status='completed'")->fetch_assoc()['c'];
+$totalPages = ceil($totalHistory / $limit);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Performance - Education Hub</title>
+    <title>My Performance - Education Hub</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/performance.css">
 </head>
+
 <body>
     <div class="layout">
         <?php include 'includes/sidebar.php'; ?>
-
         <main class="main-content">
             <?php include 'includes/header.php'; ?>
 
-            <section>
-                <!-- === Stats Overview Cards === -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">📝</div>
-                        <div class="stat-value"><?= $stats['total_quizzes'] ?></div>
-                        <div class="stat-label">Total Quizzes</div>
+            <section class="performance-header">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h1>📊 Performance Dashboard</h1>
+                        <p style="color: var(--text-muted);">Real-time analytics and achievement tracking</p>
                     </div>
-                    <div class="stat-card success">
-                        <div class="stat-icon">🎯</div>
-                        <div class="stat-value"><?= $stats['avg_score'] ?>%</div>
-                        <div class="stat-label">Overall Accuracy</div>
-                    </div>
-                    <div class="stat-card warning">
-                        <div class="stat-icon">📖</div>
-                        <div class="stat-value"><?= $stats['subjects_studied'] ?></div>
-                        <div class="stat-label">Subjects Studied</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="exportCSV()" class="btn btn-secondary">📥 CSV Export</button>
+                        <button onclick="printReport()" class="btn btn-primary">🖨️ Print Report</button>
                     </div>
                 </div>
+            </section>
 
-                <!-- === Performance by Subject (Progress Bars) === -->
-                <?php if ($subjectPerformance->num_rows > 0): ?>
-                <div class="card" style="margin-bottom: 32px;">
-                    <div class="card-header">
-                        <h3 class="card-title">📊 Performance by Subject</h3>
+            <!-- Dynamic Insights -->
+            <div class="insights-banner">
+                <div style="font-size: 32px;">💡</div>
+                <div class="insights-content">
+                    <h4>Smart Insights</h4>
+                    <p><?= !empty($insights) ? implode(' • ', $insights) : "Keep taking quizzes to see personalized tips!" ?></p>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="analytics-grid">
+                <div class="stat-card-modern">
+                    <span class="icon">📝</span>
+                    <div class="value"><?= $summary['total_quizzes'] ?></div>
+                    <div class="label">Total Quizzes</div>
+                </div>
+                <div class="stat-card-modern">
+                    <span class="icon">🎯</span>
+                    <div class="value"><?= round($summary['avg_score'], 1) ?>%</div>
+                    <div class="label">Overall Accuracy</div>
+                    <div class="trend <?= $improvement >= 0 ? 'up' : 'down' ?>">
+                        <?= $improvement >= 0 ? '↑' : '↓' ?> <?= abs(round($improvement, 1)) ?>% vs Prev
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 16px;">
-                        <?php while ($sp = $subjectPerformance->fetch_assoc()): ?>
-                        <div style="display: flex; align-items: center; gap: 16px;">
-                            <!-- Subject name -->
-                            <span style="min-width: 160px; font-weight: 600;"><?= htmlspecialchars($sp['name']) ?></span>
-                            <!-- Progress bar (width = avg_score%) -->
-                            <div style="flex: 1; height: 24px; background: var(--surface-light); border-radius: 12px; overflow: hidden;">
-                                <div style="width: <?= round($sp['avg_score']) ?>%; height: 100%; background: <?= $sp['color'] ?>; border-radius: 12px; transition: width 0.5s;"></div>
+                </div>
+                <div class="stat-card-modern">
+                    <span class="icon">🏆</span>
+                    <div class="value"><?= $summary['max_score'] ?>%</div>
+                    <div class="label">Highest Score</div>
+                </div>
+                <div class="stat-card-modern">
+                    <span class="icon">⏱️</span>
+                    <div class="value"><?= floor($summary['total_time'] / 60) ?>m</div>
+                    <div class="label">Total Time Spent</div>
+                </div>
+                <div class="stat-card-modern">
+                    <span class="icon">📈</span>
+                    <div class="value">#<?= $rank ?></div>
+                    <div class="label">Class Rank (Top <?= $percentile ?>%)</div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>📈 Score Trend (Last 20)</h3>
+                    <div id="trendChart" class="canvas-container"></div>
+                </div>
+                <div class="chart-card">
+                    <h3>📊 Subject Proficiency</h3>
+                    <div id="subjectChart" class="canvas-container"></div>
+                </div>
+            </div>
+
+            <!-- Gamification & Extra Stats -->
+            <div class="gamification-grid">
+                <div class="chart-card">
+                    <h3>🏆 Achievement Badges</h3>
+                    <div class="badge-gallery">
+                        <?php foreach ($badges as $id => $b): ?>
+                            <div class="achievement-badge <?= $b['earned'] ? 'unlocked' : '' ?>">
+                                <?= $b['icon'] ?>
+                                <div class="badge-tooltip">
+                                    <strong><?= $b['label'] ?></strong><br>
+                                    <?= $b['desc'] ?>
+                                </div>
                             </div>
-                            <!-- Percentage and attempt count -->
-                            <span style="min-width: 60px; text-align: right; font-weight: 600;"><?= round($sp['avg_score'], 1) ?>%</span>
-                            <span style="color: var(--text-muted); font-size: 12px;">(<?= $sp['attempts'] ?> attempts)</span>
-                        </div>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     </div>
                 </div>
-                <?php endif; ?>
-
-                <!-- === Quiz History Table === -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">📋 Quiz History</h3>
+                <div class="chart-card">
+                    <h3>🔥 Activity Heatmap (Last 6m)</h3>
+                    <div class="heatmap-container" id="heatmap">
+                        <!-- Filled via JS -->
                     </div>
+                    <p style="font-size: 11px; margin-top: 10px; color: var(--text-muted);"><?= $streak ?> day active streak!</p>
+                </div>
+                <div class="chart-card" style="display: flex; align-items: center; justify-content: center;">
+                    <div id="ratioChart"></div>
+                </div>
+            </div>
 
-                    <?php if ($history->num_rows > 0): ?>
-                    <div class="table-container">
-                        <table>
-                            <thead>
+            <!-- Subject-wise Analysis Table -->
+            <div class="card" style="margin-bottom: 32px;">
+                <div class="card-header">
+                    <h3>📚 Subject-wise Performance</h3>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Year/Sem</th>
+                                <th>Attempts</th>
+                                <th>Avg. Score</th>
+                                <th>Indicator</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($subjectData as $s): ?>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Subject</th>
-                                    <th>Score</th>
-                                    <th>Percentage</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while ($row = $history->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?= formatDate($row['taken_at']) ?></td>
                                     <td>
-                                        <span style="background: <?= $row['subject_color'] ?>20; color: <?= $row['subject_color'] ?>; padding: 4px 12px; border-radius: 20px; font-size: 12px;">
+                                        <span class="indicator-dot" style="background: <?= $s['color'] ?>;"></span>
+                                        <strong><?= htmlspecialchars($s['subject_name']) ?></strong>
+                                    </td>
+                                    <td><?= $s['year'] ?> / Sem <?= $s['semester'] ?></td>
+                                    <td><?= $s['attempts'] ?></td>
+                                    <td><strong><?= round($s['avg_score'], 1) ?>%</strong></td>
+                                    <td>
+                                        <?php if ($s['avg_score'] >= 80): ?>
+                                            <span class="badge badge-strong">Strong</span>
+                                        <?php elseif ($s['avg_score'] >= 50): ?>
+                                            <span class="badge badge-moderate">Moderate</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-weak">Needs Work</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quiz History with Filter -->
+            <div class="card">
+                <div class="card-header" style="flex-wrap: wrap; gap: 15px;">
+                    <h3>📋 Extended Quiz History</h3>
+                    <div class="filter-bar">
+                        <input type="text" id="hist-search" class="filter-input" placeholder="Quick search subject...">
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Subject</th>
+                                <th>Score</th>
+                                <th>Accuracy</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quiz-history-body">
+                            <?php while ($row = $history->fetch_assoc()): ?>
+                                <tr>
+                                    <td><?= formatDate($row['completed_at']) ?></td>
+                                    <td>
+                                        <span style="border-left: 4px solid <?= $row['subject_color'] ?>; padding-left: 10px;">
                                             <?= htmlspecialchars($row['subject_name']) ?>
                                         </span>
                                     </td>
-                                    <td><?= $row['score'] ?>/<?= $row['total_questions'] ?></td>
-                                    <td><strong><?= $row['percentage'] ?>%</strong></td>
+                                    <td><?= $row['correct_answers'] ?>/<?= $row['total_questions'] ?></td>
+                                    <td><strong><?= $row['score'] ?>%</strong></td>
+                                    <td><?= floor($row['time_taken'] / 60) ?>m <?= $row['time_taken'] % 60 ?>s</td>
                                     <td>
-                                        <?php
-                                        if ($row['percentage'] >= 80) echo '<span style="color: var(--success); font-weight: 600;">✓ Excellent</span>';
-                                        elseif ($row['percentage'] >= 60) echo '<span style="color: var(--primary); font-weight: 600;">Good</span>';
-                                        elseif ($row['percentage'] >= 40) echo '<span style="color: var(--warning); font-weight: 600;">Average</span>';
-                                        else echo '<span style="color: var(--danger); font-weight: 600;">Needs Work</span>';
-                                        ?>
+                                        <span class="badge <?= $row['score'] >= 80 ? 'badge-strong' : ($row['score'] >= 40 ? 'badge-moderate' : 'badge-weak') ?>">
+                                            <?= $row['score'] >= 40 ? 'Passed' : 'Failed' ?>
+                                        </span>
                                     </td>
                                 </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <?php else: ?>
-                    <p style="text-align: center; color: var(--text-muted); padding: 48px;">
-                        No quiz history yet. <a href="quiz.php" style="color: var(--primary);">Take your first quiz!</a>
-                    </p>
-                    <?php endif; ?>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
                 </div>
-            </section>
+
+                <!-- Pagination -->
+                <?php if ($totalPages > 1): ?>
+                    <div style="display: flex; gap: 8px; justify-content: center; padding: 20px;">
+                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                            <a href="?p=<?= $i ?>" class="btn btn-sm <?= $page == $i ? 'btn-primary' : 'btn-secondary' ?>"><?= $i ?></a>
+                        <?php endfor; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
         </main>
     </div>
+
+    <script src="assets/js/performance.js"></script>
+    <script>
+        // Pass PHP data to JS
+        const trendData = <?= json_encode($trendData) ?>;
+        const subjectData = <?= json_encode($subjectData) ?>;
+        const avgScore = <?= $summary['avg_score'] ?>;
+        const heatmapData = <?= json_encode($heatmapData) ?>;
+
+        window.addEventListener('load', () => {
+            // Draw Trend Chart
+            PerformanceCharts.drawLineChart('trendChart', trendData);
+
+            // Draw Subject Chart (Top 6 for visibility)
+            PerformanceCharts.drawBarChart('subjectChart', subjectData.slice(0, 6).map(s => ({
+                label: s.subject_name,
+                score: s.avg_score,
+                color: s.color
+            })));
+
+            // Draw Accuracy Doughnut
+            PerformanceCharts.drawDoughnut('ratioChart', avgScore);
+
+            // Generate Heatmap (Dummy last 180 days)
+            const heatmap = document.getElementById('heatmap');
+            const today = new Date();
+            for (let i = 180; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(today.getDate() - i);
+                const dateKey = d.toISOString().split('T')[0];
+                const count = heatmapData[dateKey] || 0;
+                let level = 0;
+                if (count > 0) level = Math.min(count, 4);
+
+                const day = document.createElement('div');
+                day.className = `heatmap-day level-${level}`;
+                day.title = `${dateKey}: ${count} quizzes`;
+                heatmap.appendChild(day);
+            }
+        });
+    </script>
 </body>
+
 </html>
