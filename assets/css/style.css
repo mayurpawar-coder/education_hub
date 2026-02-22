@@ -476,6 +476,10 @@ body.modal-open {
   margin-bottom: 32px;
   padding-bottom: 20px;
   border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 50;
 }
 
 .header h1 {
@@ -883,10 +887,15 @@ td {
    480px : Single-column stat grids on very small phones
    ============================================================ */
 @media (max-width: 768px) {
+  .mobile-toggle {
+    display: block !important;
+  }
+
   .sidebar {
     transform: translateX(-100%);
     z-index: 1000;
     transition: transform 0.3s ease;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
   }
 
   .sidebar.open {
@@ -896,20 +905,33 @@ td {
   .main-content {
     margin-left: 0;
     padding: 20px 16px;
+    width: 100%;
   }
 
   .header {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+  }
+
+  .header h1 {
+    font-size: 20px;
+    flex: 1;
   }
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
 
   .admin-stats {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .subjects-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -921,5 +943,34 @@ td {
 
   .auth-card {
     padding: 24px;
+  }
+
+  /* Specific mobile overrides */
+  .dashboard-container {
+    padding: 16px !important;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .flex-stack-mobile {
+    flex-direction: column !important;
+  }
+
+  .text-center-mobile {
+    text-align: center !important;
+  }
+
+  .header-right {
+    gap: 8px;
+  }
+
+  .user-details {
+    display: none; /* Hide name on very small screens to save space */
   }
 }

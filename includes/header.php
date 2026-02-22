@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ============================================================
  * Education Hub - Header Component (includes/header.php)
@@ -45,6 +46,11 @@ $basePath = getBasePath();
         <a href="<?= $basePath . $backUrl ?>" class="back-button" style="margin-right:12px; color:var(--text); text-decoration:none; font-weight:600;">← Back</a>
     <?php endif; ?>
 
+    <!-- Mobile Menu Toggle Button -->
+    <button id="mobile-toggle" class="mobile-toggle" style="display:none; background:none; border:none; font-size:24px; color:var(--text); cursor:pointer; margin-right:15px; padding:5px;">
+        ☰
+    </button>
+
     <!-- Dynamic page title (set by each page's $pageTitle variable) -->
     <h1><?= $pageTitle ?? 'Dashboard' ?></h1>
 
@@ -59,7 +65,7 @@ $basePath = getBasePath();
             <div class="avatar-container" style="position:relative;">
                 <?php if (!empty($user['profile_image']) && file_exists(__DIR__ . '/../' . $user['profile_image'])): ?>
                     <img id="header-avatar" src="<?= $basePath . $user['profile_image'] ?>" alt="Avatar"
-                         style="width:40px; height:40px; border-radius:50%; object-fit:cover; cursor:pointer;">
+                        style="width:40px; height:40px; border-radius:50%; object-fit:cover; cursor:pointer;">
                 <?php else: ?>
                     <div id="header-avatar" style="width:40px; height:40px; border-radius:50%; background:var(--surface); display:flex; align-items:center; justify-content:center; font-weight:600; cursor:pointer;">
                         <?= $initials ?>
@@ -77,15 +83,31 @@ $basePath = getBasePath();
     </div>
 
     <script>
-        (function(){
+        (function() {
             var avatar = document.getElementById('header-avatar');
             var dropdown = document.getElementById('avatar-dropdown');
             if (!avatar) return;
-            avatar.addEventListener('click', function(e){
+            avatar.addEventListener('click', function(e) {
                 e.stopPropagation();
                 dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
             });
-            document.addEventListener('click', function(){ dropdown.style.display = 'none'; });
+            document.addEventListener('click', function() {
+                dropdown.style.display = 'none';
+            });
+            // Sidebar Toggle
+            var toggle = document.getElementById('mobile-toggle');
+            var sidebar = document.querySelector('.sidebar');
+            if (toggle && sidebar) {
+                toggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('open');
+                });
+                document.addEventListener('click', function(e) {
+                    if (!sidebar.contains(e.target) && sidebar.classList.contains('open')) {
+                        sidebar.classList.remove('open');
+                    }
+                });
+            }
         })();
     </script>
 </header>

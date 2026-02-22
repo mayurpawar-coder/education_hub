@@ -58,11 +58,14 @@ if (
     <!-- === Logo Section === -->
     <div class="sidebar-logo">
         <span class="logo-icon">📚</span>
-        <h2>Education Hub</h2>
-        <!-- Role badge: shows which role is currently logged in -->
-        <small style="color: var(--text-muted); font-size: 11px; display: block; margin-top: 4px;">
-            <?= ucfirst($role) ?> Panel
-        </small>
+        <div style="flex:1;">
+            <h2>Education Hub</h2>
+            <small style="color: rgba(255,255,255,0.5); font-size: 11px; display: block; margin-top: 4px;">
+                <?= ucfirst($role) ?> Panel
+            </small>
+        </div>
+        <!-- Mobile Sidebar Close Button -->
+        <button id="sidebar-close" style="display:none; background:none; border:none; color:#fff; font-size:24px; cursor:pointer; padding:5px;">×</button>
     </div>
 
     <!-- === Navigation Links === -->
@@ -143,4 +146,16 @@ if (
             <span>Logout</span>
         </a>
     </div>
+
+    <script>
+        (function() {
+            var closeBtn = document.getElementById('sidebar-close');
+            var sidebar = document.querySelector('.sidebar');
+            if (closeBtn && sidebar) {
+                closeBtn.addEventListener('click', function() {
+                    sidebar.classList.remove('open');
+                });
+            }
+        })();
+    </script>
 </aside>
